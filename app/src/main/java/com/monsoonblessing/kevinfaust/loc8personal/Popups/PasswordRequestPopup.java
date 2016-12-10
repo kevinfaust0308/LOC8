@@ -1,4 +1,4 @@
-package com.example.kevinfaust.loc8;
+package com.monsoonblessing.kevinfaust.loc8personal.Popups;
 
 
 import android.app.Dialog;
@@ -14,12 +14,13 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.monsoonblessing.kevinfaust.loc8personal.R;
 
 /**
  * Created by Kevin Faust on 11/12/2016.
  */
 
-public class PasswordRequestDialog extends DialogFragment {
+public class PasswordRequestPopup extends DialogFragment {
 
     private FirebaseAuth mAuth;
 
@@ -50,7 +51,7 @@ public class PasswordRequestDialog extends DialogFragment {
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        // User cancelled the dialog
+                        // FirebaseUser cancelled the dialog
                         dismiss();
                     }
                 });

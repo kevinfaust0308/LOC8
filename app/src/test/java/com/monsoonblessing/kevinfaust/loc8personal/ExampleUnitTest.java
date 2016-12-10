@@ -1,4 +1,4 @@
-package com.example.kevinfaust.loc8;
+package com.monsoonblessing.kevinfaust.loc8personal;
 
 import org.junit.Test;
 

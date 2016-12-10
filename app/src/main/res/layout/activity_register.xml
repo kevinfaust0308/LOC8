@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/hongkong"
-    tools:context="com.example.kevinfaust.loc8.Register">
+    tools:context="com.monsoonblessing.kevinfaust.loc8personal.Activities.RegisterActivity">
 
     <LinearLayout
         android:background="@drawable/dark_gradient"

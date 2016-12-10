@@ -1,22 +1,22 @@
-package com.example.kevinfaust.loc8;
+package com.monsoonblessing.kevinfaust.loc8personal;
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by Kevin Faust on 11/12/2016.
  */
 
-public class User {
+public class FirebaseUser {
 
-    private String name, email, pictureUrl, latitude, longitude, statusMsg;
+    private String id, name, email, pictureUrl, latitude, longitude, statusMsg;
     private boolean online;
     private Map<String, String> friends;
 
-    public User() {
+    public FirebaseUser() {
     }
 
-    public User(String name, String email, String pictureUrl, String latitude, String longitude, String statusMsg, boolean online, Map<String, String> friends) {
+    public FirebaseUser(String id, String name, String email, String pictureUrl, String latitude, String longitude, String statusMsg, boolean online, Map<String, String> friends) {
+        this.id = id;
         this.name = name;
         this.email = email;
         this.pictureUrl = pictureUrl;
@@ -25,6 +25,14 @@ public class User {
         this.statusMsg = statusMsg;
         this.online = online;
         this.friends = friends;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -89,5 +97,13 @@ public class User {
 
     public void setOnline(boolean online) {
         this.online = online;
+    }
+
+    public double getDoubleLatitude() {
+        return Double.parseDouble(this.latitude);
+    }
+
+    public double getDoubleLongitude() {
+        return Double.parseDouble(this.longitude);
     }
 }

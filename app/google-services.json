@@ -49,6 +49,50 @@
           "status": 2
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585249198993:android:44ede34d341f91ac",
+        "android_client_info": {
+          "package_name": "com.monsoonblessing.kevinfaust.loc8personal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "585249198993-1puotve39af2v6k1011bt5eovlljst9c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.monsoonblessing.kevinfaust.loc8personal",
+            "certificate_hash": "41117CC8FF164683E4361782E57149480455BDBF"
+          }
+        },
+        {
+          "client_id": "585249198993-a1mq8cmr7hp509e48ijboohabj3gcuhv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1ymO2KAdJTKxdVf5Era8JD4IqxsvixRw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "585249198993-a1mq8cmr7hp509e48ijboohabj3gcuhv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
     }
   ],
   "configuration_version": "1"

@@ -5,13 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.kevinfaust.loc8.MainActivity">
+    tools:context="com.monsoonblessing.kevinfaust.loc8personal.Activities.MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
         android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingLeft="10dp"
@@ -56,52 +56,166 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+
         <fragment
             android:id="@+id/map"
             android:name="com.google.android.gms.maps.MapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <ImageView
+            android:id="@+id/wifi_animation_logo"
+            android:visibility="gone"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/wifi1"
+            android:layout_gravity="center_horizontal"
+            android:layout_width="40dp"
+            android:layout_height="40dp"/>
+
         <LinearLayout
-            android:layout_gravity="bottom"
-            android:layout_width="match_parent"
+            android:translationX="250dp"
+            android:id="@+id/slide_menu"
+            android:layout_gravity="center_vertical|right"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/changeStatusAvailability"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@color/md_teal_200"
-                android:padding="5dp"
-                android:text="Change online status"
-                android:textColor="#ffffffff"
-                android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/search_btn"
-                android:layout_width="0dp"
+            <ImageView
+                android:id="@+id/slide_menu_toggle_btn"
+                android:layout_width="30dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="bottom|right"
+                android:background="@drawable/round_left_corners"
+                android:paddingTop="7dp"
+                android:src="@drawable/left_arrow"
+                android:visibility="gone" />
+
+
+            <LinearLayout
+                android:layout_width="250dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@color/md_teal_200"
-                android:padding="5dp"
+                android:background="@color/md_teal_100"
+                android:gravity="right"
+                android:orientation="vertical"
+                android:paddingBottom="20dp"
+                android:paddingLeft="40dp"
+                android:paddingTop="20dp">
+
+
+                <TextView
+                    android:translationX="210dp"
+                    android:id="@+id/changeStatusAvailability"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/left_border"
+                    android:drawableLeft="@drawable/visible"
+                    android:drawablePadding="20dp"
+                    android:gravity="center_vertical|right"
+                    android:padding="10dp"
+                    android:text="Change my visibility"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:translationX="210dp"
+                    android:id="@+id/search_btn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="25dp"
+                    android:background="@drawable/left_border"
+                    android:drawableLeft="@drawable/search"
+                    android:drawablePadding="20dp"
+                    android:gravity="center_vertical|right"
+                    android:padding="10dp"
+                    android:text="Find friends"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:translationX="210dp"
+                    android:id="@+id/logout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="25dp"
+                    android:background="@drawable/left_border"
+                    android:drawableLeft="@drawable/logout"
+                    android:drawablePadding="20dp"
+                    android:gravity="center_vertical|right"
+                    android:padding="10dp"
+                    android:text="Logout"
+                    android:textStyle="bold" />
+
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!--<ImageView
+            android:id="@+id/slide_menu_toggle_btn"
+            android:layout_width="80dp"
+            android:layout_height="30dp"
+            android:layout_gravity="bottom|right"
+            android:layout_marginBottom="200dp"
+            android:background="@drawable/round_left_corners"
+            android:paddingTop="7dp"
+            android:src="@drawable/white_arrow_up"
+            android:translationY="210dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/slide_menu"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:background="@color/md_teal_200"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingTop="20dp"
+            android:translationY="210dp">
+
+            <ImageButton
+                android:id="@+id/changeStatusAvailability"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="@drawable/round_menu_icons"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/visible"
+                android:text="Change my visibility"
+                android:textColor="#ffffffff"
+                android:textStyle="bold"
+                android:translationX="60dp" />
+
+            <ImageButton
+                android:id="@+id/search_btn"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="13dp"
+                android:background="@drawable/round_menu_icons"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/add_user"
                 android:text="Add Friends"
                 android:textColor="#ffffffff"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:translationX="60dp" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/logout"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@color/md_teal_200"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="13dp"
+                android:background="@drawable/round_menu_icons"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/logout"
                 android:text="Logout"
                 android:textColor="#ffffffff"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:translationX="60dp" />
 
-        </LinearLayout>
+        </LinearLayout>-->
 
 
     </FrameLayout>

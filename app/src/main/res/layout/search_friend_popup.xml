@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_search"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:id="@+id/search_popup"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.example.kevinfaust.loc8.SearchActivity">
+    tools:context="com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup">
 
     <LinearLayout
         android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
+        android:gravity="bottom"
         android:orientation="horizontal">
 
         <EditText
@@ -23,24 +23,29 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:hint="Search a user (email)"
+            android:hint="Search user by email"
             android:inputType="textPersonName" />
 
         <LinearLayout
+            android:gravity="right"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="right">
+            android:layout_height="wrap_content">
 
-            <Button
+            <ImageButton
+                android:padding="10dp"
+                android:src="@drawable/search_bigger"
                 android:textStyle="bold"
                 android:textColor="#ffffffff"
-                android:background="@color/md_teal_200"
+                android:background="@color/md_teal_400"
                 android:id="@+id/search_btn"
-                android:layout_width="wrap_content"
+                android:layout_width="70dp"
+                android:scaleType="centerInside"
                 android:layout_height="40dp"
-                android:layout_gravity="right"
                 android:text="Search" />
+
         </LinearLayout>
+
+
 
     </LinearLayout>
 
@@ -50,11 +55,11 @@
         android:layout_height="3dp"
         android:background="@android:color/darker_gray"/>
 
-<!--    <TextView
-        android:layout_marginTop="10dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Search Result: " />-->
+    <!--    <TextView
+            android:layout_marginTop="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search Result: " />-->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -73,8 +78,8 @@
             <ImageView
                 android:layout_marginRight="10dp"
                 android:id="@+id/search_profile_pic_result"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="65dp"
+                android:layout_height="65dp"
                 android:contentDescription="PROFILE_PIC_HERE" />
 
             <TextView
@@ -89,6 +94,8 @@
                 android:gravity="right">
 
                 <Button
+                    android:padding="5dp"
+                    android:background="@color/md_teal_50"
                     android:textStyle="bold"
                     android:id="@+id/add_user_btn"
                     android:visibility="gone"
