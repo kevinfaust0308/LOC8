@@ -7,7 +7,7 @@
 
 #### Update December 10, 2016
 - location permissions fully functional (generic permission class created)
-- broadcast receiver listens to wifi state changes (**animated*)
+- broadcast receiver listens to wifi state changes (**animated**)
 
 #### Update December 9, 2016
 - added quick menu (**animated**) to let you change your visibility, add new friends, and logout
