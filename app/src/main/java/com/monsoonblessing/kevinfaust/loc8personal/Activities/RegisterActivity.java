@@ -5,12 +5,15 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -36,8 +39,10 @@ public class RegisterActivity extends AppCompatActivity {
 
     private static final String TAG = "RegisterActivity";
     private static final int GALLERY_REQUEST = 100;
-    private static final int GALLERY_PERMISSION_CODE = 200;
+    private static final String LOC8_DEFAULT_FRIEND_ID = "meQJqhVlJGcqbXEvIi1aJVg4Z5U2";
 
+    @BindView(R.id.activity_register)
+    LinearLayout rootView;
     @BindView(R.id.name_field)
     EditText nameField;
     @BindView(R.id.email_field)
@@ -50,7 +55,7 @@ public class RegisterActivity extends AppCompatActivity {
     ImageButton uploadPic;
 
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabaseRef;
+    private DatabaseReference mFirebaseAllUsersDatabaseRef; //reference to all the user's in the database
     private StorageReference mStorageRef;
 
     private ProgressDialog mProgressDialog;
@@ -63,10 +68,11 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
         ButterKnife.bind(this);
         mAuth = FirebaseAuth.getInstance();
-        mDatabaseRef = FirebaseDatabase.getInstance().getReference();
+        mFirebaseAllUsersDatabaseRef = FirebaseDatabase.getInstance().getReference().child("UserData");
         mStorageRef = FirebaseStorage.getInstance().getReference();
         mProgressDialog = new ProgressDialog(this);
     }
+
 
     @OnClick(R.id.register_btn)
     void OnRegister() {
@@ -76,13 +82,9 @@ public class RegisterActivity extends AppCompatActivity {
 
     @OnClick(R.id.upload_pic_btn)
     void OnImageSelect() {
-        int hasGalleryPermission = ContextCompat.checkSelfPermission(this,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE);
-
-
         launchGallery();
-
     }
+
 
     private void launchGallery() {
         Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -90,13 +92,15 @@ public class RegisterActivity extends AppCompatActivity {
         startActivityForResult(galleryIntent, GALLERY_REQUEST);
     }
 
+
     private void startRegister() {
+
         final String name = nameField.getText().toString().trim();
         final String email = emailField.getText().toString().trim();
         String password = passwordField.getText().toString().trim();
         String confirm_password = confirmPasswordField.getText().toString().trim();
 
-        if (!TextUtils.isEmpty(email) && !TextUtils.isEmpty(name) && password.length() > 5 && password.equals(confirm_password) && mImageUri != null) {
+        if (hasValidFrields(name, email, password, confirm_password)) {
 
             mProgressDialog.setMessage("Setting your account up");
             mProgressDialog.show();
@@ -122,25 +126,25 @@ public class RegisterActivity extends AppCompatActivity {
                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                                 Log.d(TAG, "file uploaded successfully");
 
+                                // url of the picture stored on google
                                 Uri downloadUrl = taskSnapshot.getDownloadUrl();
 
                                 String user_id = mAuth.getCurrentUser().getUid(); //unique id of registered user
 
                                 //new child node with user's unique id as key
-                                DatabaseReference currentUserDb = mDatabaseRef.child("UserData").child(user_id);
+                                DatabaseReference currentUserDb = mFirebaseAllUsersDatabaseRef.child(user_id);
                                 currentUserDb.child("name").setValue(name);
                                 currentUserDb.child("email").setValue(email);
                                 currentUserDb.child("pictureUrl").setValue(downloadUrl.toString());
                                 currentUserDb.child("online").setValue(true);
                                 currentUserDb.child("statusMsg").setValue("Hi I'm " + name + "!");
 
-                                // map of all our friends. master account is default friend
-                                String defaultFriendId = "meQJqhVlJGcqbXEvIi1aJVg4Z5U2"; // grabbed from firebase
-                                currentUserDb.child("friends").child(defaultFriendId).setValue("master@master.com");
+                                // map of all our friends. all users have LOC8 as a friend
+                                currentUserDb.child("friends").child(LOC8_DEFAULT_FRIEND_ID).setValue("LOC8");
 
-                                // hardcoded location values to yale
-                                currentUserDb.child("latitude").setValue("43.130026");
-                                currentUserDb.child("longitude").setValue("-82.798263");
+                                // hardcoded location values to new york
+                                currentUserDb.child("latitude").setValue("40.730610");
+                                currentUserDb.child("longitude").setValue("-73.935242");
 
                                 mProgressDialog.dismiss();
                                 // user logged in
@@ -152,21 +156,49 @@ public class RegisterActivity extends AppCompatActivity {
 
                         });
                     } else {
-                        Toast.makeText(RegisterActivity.this, "Error signing up", Toast.LENGTH_LONG).show();
+                        showShortSnackbar(rootView, "User with this email already exists");
                         mProgressDialog.dismiss();
                     }
-                    ;
-
                 }
             });
 
 
+        }
+    }
+
+
+    public boolean hasValidFrields(String name, String email, String password, String confirm_password) {
+
+        boolean hasValidFields = false;
+
+        if (!TextUtils.isEmpty(email) && !TextUtils.isEmpty(name) && !TextUtils.isEmpty(password) && !TextUtils.isEmpty(confirm_password) && mImageUri != null) {
+
+            // make sure password is at least 5 characters
+            if (password.length() > 5) {
+
+                if (password.equals(confirm_password)) {
+
+                    // we passed all the validation checks
+                    hasValidFields = true;
+
+                } else {
+                    showShortSnackbar(rootView, "Passwords not matching");
+                }
+            } else {
+                showShortSnackbar(rootView, "Password must be at least 5 characters");
+            }
         } else {
-            Toast.makeText(this, "Please fill out all fields", Toast.LENGTH_LONG).show();
+            showShortSnackbar(rootView, "Please fill out all fields");
         }
 
-
+        return hasValidFields;
     }
+
+
+    public void showShortSnackbar(View root, String message) {
+        Snackbar.make(root, message, Snackbar.LENGTH_SHORT).show();
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

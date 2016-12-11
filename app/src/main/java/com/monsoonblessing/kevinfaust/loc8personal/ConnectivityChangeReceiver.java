@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.monsoonblessing.kevinfaust.loc8personal.Activities.MainActivity;
+
 /**
  * Created by Kevin Faust on 12/10/2016.
  */
@@ -23,8 +25,8 @@ public class ConnectivityChangeReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        AppCompatActivity connectivityReceiverListeningActivity = ((AppCompatActivity) context);
-        ImageView wifi = (ImageView) connectivityReceiverListeningActivity.findViewById(R.id.wifi_animation_logo);
+        MainActivity mainActivity = ((MainActivity) context);
+        ImageView wifi = (ImageView) mainActivity.findViewById(R.id.wifi_animation_logo);
         wifi.setBackgroundResource(R.drawable.wifi_animation);
         AnimationDrawable wifiAnimation = (AnimationDrawable) wifi.getBackground();
 

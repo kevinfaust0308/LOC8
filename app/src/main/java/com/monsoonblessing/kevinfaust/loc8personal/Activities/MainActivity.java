@@ -1,6 +1,6 @@
 package com.monsoonblessing.kevinfaust.loc8personal.Activities;
 
-import android.Manifest;
+import android.*;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -17,7 +17,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -25,7 +24,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -46,24 +44,31 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.monsoonblessing.kevinfaust.loc8personal.Activities.LoginActivity;
 import com.monsoonblessing.kevinfaust.loc8personal.ConnectivityChangeReceiver;
+import com.monsoonblessing.kevinfaust.loc8personal.CurrentFirebaseUserUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUser;
 import com.monsoonblessing.kevinfaust.loc8personal.GoogleMapHelper;
 import com.monsoonblessing.kevinfaust.loc8personal.InternetConnectivityUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.MetricUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.InternetRequiredPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup;
-import com.monsoonblessing.kevinfaust.loc8personal.R;
 import com.monsoonblessing.kevinfaust.loc8personal.User;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.monsoonblessing.kevinfaust.loc8personal.R;
 
 import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+
+/**
+ * Created by Kevin on 2016-12-11.
+ */
+
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, SearchFriendPopup.Search {
 
@@ -96,28 +101,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private FirebaseAuth mAuth;
-    private FirebaseAuth.AuthStateListener mAuthStateListener;
 
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
     private DatabaseReference mFirebaseRootDatabaseRef; //reference to root database
     private DatabaseReference mFirebaseAllUsersDatabaseRef; //reference to all the user's in the database
+
     private DatabaseReference mFirebaseCurrentUserDatabaseRef; //reference to user's database node
-
     private User mCurrentUser; //contains current user object
-    private boolean mFirstLoad = true; //so that we only assign the listeners to the friends once
+    private CurrentFirebaseUserUtils mCurrentFirebaseUserUtils; // tools to manage current user's database settings
 
+    private boolean mFirstLoad = true; //so that we only assign the listeners to the friends once
     private ImageLoader imageLoader;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        mAuth = FirebaseAuth.getInstance();
+        mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+        mGoogleMapHelper = new GoogleMapHelper(this);
+
 
         //database setup
+        mAuth = FirebaseAuth.getInstance();
+        String user_id = mAuth.getCurrentUser().getUid();
         mFirebaseRootDatabaseRef = FirebaseDatabase.getInstance().getReference();
         mFirebaseAllUsersDatabaseRef = mFirebaseRootDatabaseRef.child("UserData");
-        mFirebaseCurrentUserDatabaseRef = mFirebaseAllUsersDatabaseRef.child(mAuth.getCurrentUser().getUid());
+        mFirebaseCurrentUserDatabaseRef = mFirebaseAllUsersDatabaseRef.child(user_id);
+        mCurrentFirebaseUserUtils = new CurrentFirebaseUserUtils(user_id);
 
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -125,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 Log.d(TAG, "mAuthStateListener code being run");
 
-                //if user not logged in, redirect them to login page
+                //if user logs out, redirect them to login page
                 if (firebaseAuth.getCurrentUser() == null) {
                     Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(loginIntent);
@@ -135,14 +147,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         };
         buildGoogleApiClient();
-
-        mGoogleMapHelper = new GoogleMapHelper(this);
-
-        mMapFragment = (MapFragment) getFragmentManager()
-                .findFragmentById(R.id.map);
-
-        final DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
         slideMenuToggleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -198,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -219,7 +224,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 new IntentFilter(
                         ConnectivityManager.CONNECTIVITY_ACTION));
 
+        showUserOnMap();
+
     }
+
 
     @Override
     protected void onStop() {
@@ -228,44 +236,64 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
         }
+        mAuth.removeAuthStateListener(mAuthStateListener);
         unregisterReceiver(mConnectivityChangeReceiver);
+        mCurrentFirebaseUserUtils.makeOffline();
     }
+
 
     @OnClick(R.id.changeStatusAvailability)
     void onStatusChange() {
-        toggleUserVisibilityOnMap();
+        // user has to be online to change visibility
+        if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+        } else {
+            toggleUserVisibilityOnMap();
+        }
     }
+
 
     @OnClick(R.id.saveStatusBtn)
     void onStatusSave() {
-
-        String status = statusMessage.getText().toString();
-        setUserStatusMessage(status);
-
+        // user has to be online to change status
+        if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+        } else {
+            String status = statusMessage.getText().toString();
+            mCurrentFirebaseUserUtils.updateStatus(status);
+        }
     }
+
 
     @OnClick(R.id.search_btn)
     void onSearch() {
-        if (mCurrentUser != null) {
+
+        // user has to be online to do searches
+        if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+        } else {
 
             ArrayList<String> friendEmails = new ArrayList<>(mCurrentUser.getFriends().values());
 
-            //pass emails to search popup
+            //pass emails to search popup so we know which emails are already friend's
             SearchFriendPopup p = new SearchFriendPopup().newInstance(mCurrentUser.getId(), mCurrentUser.getEmail(), friendEmails);
             p.show(getSupportFragmentManager(), "SearchFriendPopup");
-
-        } else {
-            Toast.makeText(this, "Please try again", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     /*
     Remove user from mMap as they signout
      */
     @OnClick(R.id.logout)
     void onLogout() {
-        hideUserFromMap();
-        mAuth.signOut();
+        // user has to be online to logout
+        if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+        } else {
+            mCurrentFirebaseUserUtils.makeOffline();
+            mAuth.signOut();
+        }
     }
 
 
@@ -278,24 +306,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     public void hideUserFromMap() {
         Log.d(TAG, "Make me offline");
-        mFirebaseCurrentUserDatabaseRef.child("online").setValue(false);
+        mCurrentFirebaseUserUtils.makeOffline();
         statusAvailability.setBackground(ContextCompat.getDrawable(this, R.drawable.red_circle));
     }
 
+
     /*
-    When user signs out or closes app, hide them
+    When user opens app, show them
     */
     public void showUserOnMap() {
         Log.d(TAG, "Make me online");
-        mFirebaseCurrentUserDatabaseRef.child("online").setValue(true);
+        mCurrentFirebaseUserUtils.makeOnline();
         statusAvailability.setBackground(ContextCompat.getDrawable(this, R.drawable.green_circle));
     }
+
 
     /*
     FirebaseUser visible -> then hide
     FirebaseUser hidden -> then show
     */
     public void toggleUserVisibilityOnMap() {
+        // can only toggle from quick menu which will have User object configured
         if (mCurrentUser.isOnline()) {
             hideUserFromMap();
         } else {
@@ -322,21 +353,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return super.onOptionsItemSelected(item);
     }*/
 
-    /*
-    Updates current user's location. This will automatically update the mMap
-     */
-    public void updateUserLocationInDatabase(String longitude, String latitude) {
-        mFirebaseCurrentUserDatabaseRef.child("longitude").setValue(longitude);
-        mFirebaseCurrentUserDatabaseRef.child("latitude").setValue(latitude);
-    }
-
-    /*
-    Set your status message
-     */
-    public void setUserStatusMessage(String message) {
-        mFirebaseCurrentUserDatabaseRef.child("statusMsg").setValue(message);
-    }
-
 
     /***********************************************************************************************
      * MAP STUFF
@@ -347,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d(TAG, "OnMapReady called");
         mMap = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
         }
 
@@ -408,6 +424,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
 
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
@@ -415,6 +432,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
     }
+
 
     /*
     Adds or removes a specified friend's marker from the mMap
@@ -437,11 +455,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     private void focusCamera(GoogleMap mappy, double latitude, double longitude, int zoom) {
         // focus camera on user location
         mappy.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
         mappy.animateCamera(CameraUpdateFactory.zoomTo(zoom));
     }
+
 
     /*
     Creates and places user marker on map
@@ -480,6 +500,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+
     /*
     Creates and places a friend marker on map
      */
@@ -509,6 +530,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+
     private void buildGoogleApiClient() {
         Log.d(TAG, "Building google api client");
         if (mGoogleApiClient == null) {
@@ -520,11 +542,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "Connected to google api client");
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(30000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setInterval(5000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         /* google api client is built only when we have the permissions so this check is redundant but
         android doesn't know so i will leave this here */
@@ -535,20 +559,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     @Override
     public void onConnectionSuspended(int i) {
-
     }
+
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
     }
+
 
     @Override
     public void onLocationChanged(Location location) {
         Log.d(TAG, "Location updated. Callback run");
-        updateUserLocationInDatabase(String.valueOf(location.getLongitude()), String.valueOf(location.getLatitude()));
+        mCurrentFirebaseUserUtils.updateLocation(String.valueOf(location.getLongitude()), String.valueOf(location.getLatitude()));
     }
 
 
@@ -565,6 +590,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 FirebaseUser randomFriend = dataSnapshot.getValue(FirebaseUser.class);
                 refreshFriendMarker(randomFriend);
             }
+
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
@@ -583,3 +609,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         addValueEventListenerAndMarkerForFriend(friend_id); //REQUIRES MAP TO BE LOADED PRIOR TO CALLING THIS
     }
 }
+
+
+
+
+
+

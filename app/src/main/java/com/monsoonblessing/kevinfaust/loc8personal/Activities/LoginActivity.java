@@ -44,6 +44,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private ProgressDialog mProgressDialog;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,36 +60,55 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
+
     @OnClick(R.id.register_btn)
     void onRegister() {
-        startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+        if (hasAppPrerequisites())
+            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
     }
+
 
     @OnClick(R.id.login_btn)
     void onLogin() {
-
-        // check if we are connected to the internet
-        if (InternetConnectivityUtils.isConnectedToInternet(this)) {
-            // check permission
-            // if we have permission, try to log user in
-            if (PermissionManager.hasLocationPermission(this)) {
-                startLogin();
-            } else {
-                // request location permission from user before logging in
-                PermissionManager.requestPermission(this, PermissionManager.LOCATION_PERMISSION, PermissionManager.PERMISSION_LOCATION_CODE);
-            }
-        } else {
-            // tell user they need internet to login and continue to app
-            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
-        }
-
+        if (hasAppPrerequisites()) startLogin();
     }
+
 
     @OnClick(R.id.forgot_pass_btn)
     void onForgot() {
-        PasswordRequestPopup d = new PasswordRequestPopup();
-        d.show(getSupportFragmentManager(), "PasswordRequestPopup");
+        if (hasAppPrerequisites()) {
+            PasswordRequestPopup d = new PasswordRequestPopup();
+            d.show(getSupportFragmentManager(), "PasswordRequestPopup");
+        }
     }
+
+
+    public boolean hasAppPrerequisites() {
+        /*
+        Checks if app has internet and location permissions in order to use app (registering/logging in)
+         */
+
+        boolean hasAppPrerequisites = false;
+
+        // check permission
+        if (PermissionManager.hasLocationPermission(this)) {
+
+            // check if we are connected to the internet
+            if (InternetConnectivityUtils.isConnectedToInternet(this)) {
+                hasAppPrerequisites = true;
+            } else {
+                // tell user they need internet to login and continue to app
+                new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+            }
+
+        } else {
+            // request location permission from user before logging in
+            PermissionManager.requestPermission(this, PermissionManager.LOCATION_PERMISSION, PermissionManager.PERMISSION_LOCATION_CODE);
+        }
+
+        return hasAppPrerequisites;
+    }
+
 
     public void startLogin() {
         /*
@@ -128,6 +148,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+
     private void launchMainApp() {
         /*
         Goes from login screen to main activity
@@ -138,9 +159,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
 
-    /*
+/*    *//*
     Callback from requesting location permission
-     */
+     *//*
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
@@ -152,7 +173,8 @@ public class LoginActivity extends AppCompatActivity {
 
                     // permission was granted, yay!
                     // can now proceed to log user in and go to main app
-                    startLogin();
+
+                    //startLogin();
 
 
                 }
@@ -160,5 +182,5 @@ public class LoginActivity extends AppCompatActivity {
             }
 
         }
-    }
+    }*/
 }

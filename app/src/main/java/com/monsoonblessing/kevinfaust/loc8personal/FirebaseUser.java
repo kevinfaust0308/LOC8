@@ -8,6 +8,18 @@ import java.util.Map;
 
 public class FirebaseUser {
 
+    // keys in a firebase user object
+    public static final String FIREBASE_USER_DATA_KEY = "UserData";
+    public static final String FIREBASE_EMAIL_KEY = "email";
+    public static final String FIREBASE_FRIENDS_KEY = "friends";
+    public static final String FIREBASE_ID_KEY = "id";
+    public static final String FIREBASE_LATITUDE_KEY = "latitude";
+    public static final String FIREBASE_LONGITUDE_KEY = "longitude";
+    public static final String FIREBASE_NAME_KEY = "name";
+    public static final String FIREBASE_ONLINE_KEY = "online";
+    public static final String FIREBASE_PICTURE_URL_KEY = "pictureUrl";
+    public static final String FIREBASE_STATUS_MSG_KEY = "statusMsg";
+
     private String id, name, email, pictureUrl, latitude, longitude, statusMsg;
     private boolean online;
     private Map<String, String> friends;
