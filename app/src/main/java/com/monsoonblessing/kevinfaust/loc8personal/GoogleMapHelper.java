@@ -22,8 +22,6 @@ public class GoogleMapHelper {
 
     private static final String TAG = "GoogleMapHelper";
 
-    public static final int LOCATION_PERMISSION_CODE = 827;
-
     private Context context;
     private ImageLoader imageLoader;
 

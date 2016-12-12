@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         ButterKnife.bind(this);
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mGoogleMapHelper = new GoogleMapHelper(this);
-
+        buildGoogleApiClient();
 
         //database setup
         mAuth = FirebaseAuth.getInstance();
@@ -146,7 +146,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             }
         };
-        buildGoogleApiClient();
 
         slideMenuToggleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -232,7 +231,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(TAG, "STOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOP");
+        Log.d(TAG, "Calling onStop");
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
         }
@@ -360,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(final GoogleMap googleMap) {
-        Log.d(TAG, "OnMapReady called");
+        Log.d(TAG, "onMapReady called");
         mMap = googleMap;
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
