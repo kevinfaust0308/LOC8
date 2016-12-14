@@ -5,6 +5,11 @@
 ## See where friends are at in real-time!
 ### Currently being redeveloped into a full functional app by myself :raised_hands:
 
+#### Update December 11, 2016
+- customized warning popup
+- worked on registration validation and fixed some default settings
+- user receives prompt if they try to interact with any online capabilities from the main app without internet
+
 #### Update December 10, 2016
 - location permissions fully functional (generic permission class created)
 - broadcast receiver listens to wifi state changes (**animated**)
