@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 # LOC8 (pronounced *locate*) :earth_americas:
 
 ## See where friends are at in real-time!
@@ -27,4 +25,3 @@
 
 #### Update November 13, 2016
 - original version of app first created during Yale's 2016 hackathon
->>>>>>> 8ebf94e603b8dac66c591fd98e40915b627ad8f2
