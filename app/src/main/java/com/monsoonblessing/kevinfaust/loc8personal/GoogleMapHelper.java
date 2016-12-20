@@ -1,18 +1,12 @@
 package com.monsoonblessing.kevinfaust.loc8personal;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.util.Log;
-import android.view.View;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 /**
  * Created by Kevin Faust on 11/20/2016.
@@ -38,7 +32,7 @@ public class GoogleMapHelper {
     /*
     * Creates a basic marker
     */
-    public MarkerOptions setUpMarker(FirebaseUser firebaseUser, String name) {
+    public MarkerOptions setUpMarker(FirebaseUserModel firebaseUser, String name) {
 
         Log.d(TAG, "Creating new marker");
 
@@ -51,17 +45,17 @@ public class GoogleMapHelper {
     }
 
     // make your own marker say "Me" as marker name
-    public MarkerOptions setUpUserMarker(FirebaseUser firebaseUser) {
+    public MarkerOptions setUpUserMarker(FirebaseUserModel firebaseUser) {
         return setUpMarker(firebaseUser, "Me");
     }
 
-    public MarkerOptions setUpFriendMarker(FirebaseUser firebaseUser) {
+    public MarkerOptions setUpFriendMarker(FirebaseUserModel firebaseUser) {
         return setUpMarker(firebaseUser, firebaseUser.getName());
     }
 
 
 
-    public void removeFriendMarker(FirebaseUser friend, User currentUser) {
+    public void removeFriendMarker(FirebaseUserModel friend, User currentUser) {
 
         // get this friend's marker
         Marker friendMarker = currentUser.getOnlineFriendMarker(friend.getId());
@@ -113,7 +107,7 @@ Creates and places user marker on map
     *//*
     Creates and places a friend marker on map
      *//*
-    public void addFriendMarker(final GoogleMap mappy, final FirebaseUser friend, final User currentUser) {
+    public void addFriendMarker(final GoogleMap mappy, final FirebaseDatabaseReferences friend, final User currentUser) {
 
         Marker friendMarker = currentUser.getOnlineFriendMarker(friend.getId());
 

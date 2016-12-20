@@ -5,6 +5,11 @@
 ## See where friends are at in real-time!
 ### Currently being redeveloped into a full functional app by myself :raised_hands:
 
+#### Update December 19, 2016
+- functional friend request system implemented. However, this feature is still in early stages and so all test/boundary cases are not yet covered
+- altered Firebase database schema for a separate section involving friend requests
+- rough navigation menu has been added
+
 #### Update December 11, 2016
 - customized warning popup
 - worked on registration validation and fixed some default settings

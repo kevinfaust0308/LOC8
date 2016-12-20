@@ -1,8 +1,6 @@
 package com.monsoonblessing.kevinfaust.loc8personal;
 
 import com.google.android.gms.maps.model.Marker;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,12 +10,10 @@ import java.util.Map;
  */
 
 
-public class User extends FirebaseUser {
+public class User extends FirebaseUserModel {
 
     private Map<String, Marker> onlineFriendsMarkers = new HashMap<>(); // unique friend id : friend object
     private Marker currentUserMarker = null;
-
-
 
     public User(String id, String name, String email, String pictureUrl, String latitude, String longitude, String statusMsg, boolean online, Map<String, String> friends) {
         super(id, name, email, pictureUrl, latitude, longitude, statusMsg, online, friends);

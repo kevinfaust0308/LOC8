@@ -21,11 +21,11 @@ import android.widget.TextView;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUser;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseLoggedInReferences;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseReferences;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUserModel;
 import com.monsoonblessing.kevinfaust.loc8personal.R;
 import com.squareup.picasso.Picasso;
 
@@ -40,6 +40,9 @@ import butterknife.OnClick;
  */
 
 public class SearchFriendPopup extends DialogFragment {
+    /*
+    A popup allowing you to search other users and request to connect (friend requests)
+     */
 
     private static final String TAG = "SearchFriendPopup";
 
@@ -54,20 +57,14 @@ public class SearchFriendPopup extends DialogFragment {
     @BindView(R.id.search_popup)
     LinearLayout rootView;
 
+    private FirebaseDatabaseLoggedInReferences mFirebaseDatabaseLoggedInReferences;
+
+    private ValueEventListener mFirebaseFriendEmailsUpdateListener;
+
     private ArrayList<String> mCurrentFriendEmails;
-    private String mCurrentUserEmail;
-    private String mCurrentUserId;
-    private String mSearchResultFriendEmail;
     private String mSearchResultFriendId;
 
-    private DatabaseReference mFirebaseAllUsersDatabaseRef;
-    private DatabaseReference mFirebaseCurrentUserDatabaseRef; //reference to user's database node
-
     private ProgressDialog progressDialog;
-
-    public interface Search {
-        void onAddNewFriend(String friend_id);
-    }
 
     public enum AddDisableReason {
         ALREADY_ADDED("Already Added"),
@@ -84,10 +81,9 @@ public class SearchFriendPopup extends DialogFragment {
         }
     }
 
-    public SearchFriendPopup newInstance(String currentUserId, String currentUserEmail, ArrayList<String> friendEmails) {
+    public SearchFriendPopup newInstance(ArrayList<String> friendEmails) {
         Bundle b = new Bundle();
-        b.putString("currentUserId", currentUserId);
-        b.putString("currentUserEmail", currentUserEmail);
+        ;
         b.putStringArrayList("friendEmails", friendEmails);
         SearchFriendPopup sfp = new SearchFriendPopup();
         sfp.setArguments(b);
@@ -99,19 +95,35 @@ public class SearchFriendPopup extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.search_friend_popup, null);
         ButterKnife.bind(this, v);
+        progressDialog = new ProgressDialog(getActivity());
 
         //get user's friend list so if friend already exists, disable the add friend button
         mCurrentFriendEmails = getArguments().getStringArrayList("friendEmails");
-        mCurrentUserEmail = getArguments().getString("currentUserEmail");
-        mCurrentUserId = getArguments().getString("currentUserId");
 
-        mFirebaseAllUsersDatabaseRef = FirebaseDatabase.getInstance().getReference().child("UserData");
-        mFirebaseCurrentUserDatabaseRef = mFirebaseAllUsersDatabaseRef.child(mCurrentUserId);
-        progressDialog = new ProgressDialog(getActivity());
+        mFirebaseDatabaseLoggedInReferences = new FirebaseDatabaseLoggedInReferences();
 
+        // listens to any new friend updates
+        // if we send a friend request and user accepts, our friend list emails would not contain the updated user email
+        // which would allow us to send a friend request when we are already added
+        mFirebaseFriendEmailsUpdateListener = mFirebaseDatabaseLoggedInReferences.getFirebaseCurrentUserDatabaseRef().child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                    String email = (String) ds.getValue();
+                    if (!mCurrentFriendEmails.contains(email)) {
+                        mCurrentFriendEmails.add(email);
+                    }
+                }
+            }
 
-        Log.d(TAG, "FirebaseUser friend emails: " + mCurrentFriendEmails);
-        Log.d(TAG, "Current user email: " + mCurrentUserEmail);
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        Log.d(TAG, "FirebaseDatabaseReferences friend emails: " + mCurrentFriendEmails);
+        Log.d(TAG, "Current user email: " + mFirebaseDatabaseLoggedInReferences.getCurrentUser().getEmail());
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setView(v);
@@ -124,13 +136,19 @@ public class SearchFriendPopup extends DialogFragment {
                 })*/
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        // FirebaseUser cancelled the dialog
+                        // FirebaseDatabaseReferences cancelled the dialog
                         dismiss();
                     }
                 });
         // Create the AlertDialog object and return it
         return builder.create();
 
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        mFirebaseDatabaseLoggedInReferences.getFirebaseCurrentUserDatabaseRef().child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY).removeEventListener(mFirebaseFriendEmailsUpdateListener);
     }
 
     @OnClick(R.id.search_btn)
@@ -147,13 +165,13 @@ public class SearchFriendPopup extends DialogFragment {
             //TODO: we find user, user details get populated and add button appears but if we search again and no results come back, ui wont update. good enough for demo
 
             // check if their exists an email with that search text
-            Query queryRef = mFirebaseAllUsersDatabaseRef.orderByChild("email").equalTo(searchText);
+            Query queryRef = mFirebaseDatabaseLoggedInReferences.getFirebaseAllUsersDatabaseRef().orderByChild("email").equalTo(searchText);
 
             queryRef.addChildEventListener(new ChildEventListener() {
 
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    FirebaseUser searchedUser = dataSnapshot.getValue(FirebaseUser.class);
+                    FirebaseUserModel searchedUser = dataSnapshot.getValue(FirebaseUserModel.class);
 
                     Log.d(TAG, "Profile pic url: " + searchedUser.getPictureUrl());
 
@@ -171,7 +189,7 @@ public class SearchFriendPopup extends DialogFragment {
                         disableAddUserButton(AddDisableReason.ALREADY_ADDED);
                     }
                     //if you search yourself, disable add
-                    else if (mCurrentUserEmail.equals(searchText)) {
+                    else if (mFirebaseDatabaseLoggedInReferences.getCurrentUser().getEmail().equals(searchText)) {
                         disableAddUserButton(AddDisableReason.ADDING_YOURSELF);
                     }
                     // brand new user. let user add this person
@@ -182,8 +200,10 @@ public class SearchFriendPopup extends DialogFragment {
 
                     //keep hold on user's id+username for adding later to user's friends list
                     mSearchResultFriendId = searchedUser.getId();
-                    mSearchResultFriendEmail = searchedUser.getEmail();
 
+                    Log.d(TAG, "Searched friend's ID: " + mSearchResultFriendId);
+
+                    // todo: storing more things into friend request = can more easily distinguish ppl when accepting friend requests
                 }
 
                 @Override
@@ -218,34 +238,15 @@ public class SearchFriendPopup extends DialogFragment {
     void onAdd() {
 
         //start progress dialog
-        progressDialog.setMessage("Adding friend");
+        progressDialog.setMessage("Sending friend request");
         progressDialog.show();
 
+        Log.d(TAG, "Sending request to following friend id: " + mSearchResultFriendId);
 
-        //add friend to current user's friend list
-        mFirebaseCurrentUserDatabaseRef.child("friends")
-                // have new friend's ID as key
-                .child(mSearchResultFriendId)
-                // map that ID to the new friend's email
-                .setValue(mSearchResultFriendEmail);
+        mFirebaseDatabaseLoggedInReferences.sendFriendRequest(mSearchResultFriendId);
 
-        // add current user to the added friend's friend list
-        mFirebaseAllUsersDatabaseRef.child(mSearchResultFriendId).child("friends")
-                // add current user's ID to new friend's friend list as key
-                .child(mCurrentUserId)
-                // make the value the current user's email
-                .setValue(mCurrentUserEmail);
-
-        // this friend is added so disable the add button now
+        // the friend has been sent a request so disable the add button now
         disableAddUserButton();
-
-        // add this newly added friend's email to our list of friend's so that if
-        // user searches for this user again right now (no reopening popup), we want the add
-        // button to be disabled
-        mCurrentFriendEmails.add(mSearchResultFriendEmail);
-
-        // tell main activity to hook on event listener/marker configuration for this newly added friend
-        ((Search) getActivity()).onAddNewFriend(mSearchResultFriendId);
 
         //dismiss progress dialog
         progressDialog.dismiss();

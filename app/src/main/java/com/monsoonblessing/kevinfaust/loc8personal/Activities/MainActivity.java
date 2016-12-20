@@ -1,6 +1,5 @@
 package com.monsoonblessing.kevinfaust.loc8personal.Activities;
 
-import android.*;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -14,10 +13,16 @@ import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -41,23 +46,22 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.monsoonblessing.kevinfaust.loc8personal.Activities.LoginActivity;
 import com.monsoonblessing.kevinfaust.loc8personal.ConnectivityChangeReceiver;
-import com.monsoonblessing.kevinfaust.loc8personal.CurrentFirebaseUserUtils;
-import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUser;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseLoggedInReferences;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseReferences;
+import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUserModel;
 import com.monsoonblessing.kevinfaust.loc8personal.GoogleMapHelper;
 import com.monsoonblessing.kevinfaust.loc8personal.InternetConnectivityUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.MetricUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.InternetRequiredPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup;
+import com.monsoonblessing.kevinfaust.loc8personal.Popups.ViewFriendRequestsPopup;
+import com.monsoonblessing.kevinfaust.loc8personal.R;
 import com.monsoonblessing.kevinfaust.loc8personal.User;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-import com.monsoonblessing.kevinfaust.loc8personal.R;
 
 import java.util.ArrayList;
 
@@ -70,7 +74,7 @@ import butterknife.OnClick;
  */
 
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, SearchFriendPopup.Search {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ViewFriendRequestsPopup.FriendRequests {
 
     private static final String TAG = "MainActivity";
 
@@ -89,47 +93,49 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     TextView menuItem2;
     @BindView(R.id.logout)
     TextView menuItem3;
+    @BindView(R.id.tool_bar)
+    Toolbar toolbar;
+    //////////////////////////////For the Navigation Drawer//////////////////////
+    @BindView(R.id.drawer_layout)
+    DrawerLayout mDrawerLayout;
+    @BindView(R.id.nav_view)
+    NavigationView mNavView;
+    private ActionBarDrawerToggle mDrawerToggle;
     private MapFragment mMapFragment;
 
     // BROADCAST RECEIVERS
     private ConnectivityChangeReceiver mConnectivityChangeReceiver;
 
-    // NON-VIEWS
+    // MAP
     private GoogleMap mMap;
     private GoogleMapHelper mGoogleMapHelper;
-
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
-    private FirebaseAuth mAuth;
 
+    // Database reference to all+user's data
+    private FirebaseDatabaseLoggedInReferences mLoggedInFirebaseDatabaseRef;
+
+    // LISTEN TO LOGOUT
     private FirebaseAuth.AuthStateListener mAuthStateListener;
-    private DatabaseReference mFirebaseRootDatabaseRef; //reference to root database
-    private DatabaseReference mFirebaseAllUsersDatabaseRef; //reference to all the user's in the database
 
-    private DatabaseReference mFirebaseCurrentUserDatabaseRef; //reference to user's database node
     private User mCurrentUser; //contains current user object
-    private CurrentFirebaseUserUtils mCurrentFirebaseUserUtils; // tools to manage current user's database settings
-
     private boolean mFirstLoad = true; //so that we only assign the listeners to the friends once
-    private ImageLoader imageLoader;
 
+    // will allow us to use images on the google map markers
+    private ImageLoader imageLoader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        setSupportActionBar(toolbar); // toolbar set up
+        setupNavView(); // nav drawer setup
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mGoogleMapHelper = new GoogleMapHelper(this);
         buildGoogleApiClient();
 
-        //database setup
-        mAuth = FirebaseAuth.getInstance();
-        String user_id = mAuth.getCurrentUser().getUid();
-        mFirebaseRootDatabaseRef = FirebaseDatabase.getInstance().getReference();
-        mFirebaseAllUsersDatabaseRef = mFirebaseRootDatabaseRef.child("UserData");
-        mFirebaseCurrentUserDatabaseRef = mFirebaseAllUsersDatabaseRef.child(user_id);
-        mCurrentFirebaseUserUtils = new CurrentFirebaseUserUtils(user_id);
+        mLoggedInFirebaseDatabaseRef = new FirebaseDatabaseLoggedInReferences();
 
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -138,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.d(TAG, "mAuthStateListener code being run");
 
                 //if user logs out, redirect them to login page
-                if (firebaseAuth.getCurrentUser() == null) {
+                if (mLoggedInFirebaseDatabaseRef.getFirebaseAuth().getCurrentUser() == null) {
                     Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
                     startActivity(loginIntent);
                     finish();
@@ -150,49 +156,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         slideMenuToggleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                ObjectAnimator menuAnimX;
-                ObjectAnimator menuItem1Anim;
-                ObjectAnimator menuItem2Anim;
-                ObjectAnimator menuItem3Anim;
-
-                // if it is hidden position, show menu
-                if (slideMenu.getTranslationX() != 0f) {
-                    menuAnimX = ObjectAnimator.ofFloat(slideMenu, "translationX", 0f);
-                    menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", 0f);
-                    menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", 0f);
-                    menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", 0f);
-                    menuAnimX.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            slideMenuToggleBtn.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.right_arrow));
-                        }
-                    });
-                } else {
-                    menuAnimX = ObjectAnimator.ofFloat(slideMenu, "translationX", MetricUtils.dpToPx(250));
-                    menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", MetricUtils.dpToPx(210));
-                    menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", MetricUtils.dpToPx(210));
-                    menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", MetricUtils.dpToPx(210));
-                    menuAnimX.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            slideMenuToggleBtn.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.left_arrow));
-                        }
-                    });
-                }
-
-                menuItem1Anim.setDuration(400);
-                menuItem2Anim.setDuration(500);
-                menuItem3Anim.setDuration(600);
-                AnimatorSet animatorSet = new AnimatorSet();
-                animatorSet.playTogether(menuAnimX, menuItem1Anim, menuItem2Anim, menuItem3Anim);
-                animatorSet.start();
+                toggleQuickMenuWithAnimation();
             }
         });
 
         imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(this));
-
 
         // check if we have internet when we first open app
         if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
@@ -208,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.d(TAG, "OnStart");
         mMapFragment.getMapAsync(this);
 
-        mAuth.addAuthStateListener(mAuthStateListener);
+        mLoggedInFirebaseDatabaseRef.getFirebaseAuth().addAuthStateListener(mAuthStateListener);
 
         // location stuff
         Log.d(TAG, "Connecting to Google Api Client");
@@ -235,9 +204,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
         }
-        mAuth.removeAuthStateListener(mAuthStateListener);
+        mLoggedInFirebaseDatabaseRef.getFirebaseAuth().removeAuthStateListener(mAuthStateListener);
         unregisterReceiver(mConnectivityChangeReceiver);
-        mCurrentFirebaseUserUtils.makeOffline();
+        mLoggedInFirebaseDatabaseRef.makeOffline();
     }
 
 
@@ -259,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
         } else {
             String status = statusMessage.getText().toString();
-            mCurrentFirebaseUserUtils.updateStatus(status);
+            mLoggedInFirebaseDatabaseRef.updateStatus(status);
         }
     }
 
@@ -275,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             ArrayList<String> friendEmails = new ArrayList<>(mCurrentUser.getFriends().values());
 
             //pass emails to search popup so we know which emails are already friend's
-            SearchFriendPopup p = new SearchFriendPopup().newInstance(mCurrentUser.getId(), mCurrentUser.getEmail(), friendEmails);
+            SearchFriendPopup p = new SearchFriendPopup().newInstance(friendEmails);
             p.show(getSupportFragmentManager(), "SearchFriendPopup");
         }
     }
@@ -290,8 +259,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
             new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
         } else {
-            mCurrentFirebaseUserUtils.makeOffline();
-            mAuth.signOut();
+            mLoggedInFirebaseDatabaseRef.makeOffline();
+            mLoggedInFirebaseDatabaseRef.getFirebaseAuth().signOut();
         }
     }
 
@@ -305,7 +274,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     public void hideUserFromMap() {
         Log.d(TAG, "Make me offline");
-        mCurrentFirebaseUserUtils.makeOffline();
+        mLoggedInFirebaseDatabaseRef.makeOffline();
         statusAvailability.setBackground(ContextCompat.getDrawable(this, R.drawable.red_circle));
     }
 
@@ -315,14 +284,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     */
     public void showUserOnMap() {
         Log.d(TAG, "Make me online");
-        mCurrentFirebaseUserUtils.makeOnline();
+        mLoggedInFirebaseDatabaseRef.makeOnline();
         statusAvailability.setBackground(ContextCompat.getDrawable(this, R.drawable.green_circle));
     }
 
 
     /*
-    FirebaseUser visible -> then hide
-    FirebaseUser hidden -> then show
+    FirebaseDatabaseReferences visible -> then hide
+    FirebaseDatabaseReferences hidden -> then show
     */
     public void toggleUserVisibilityOnMap() {
         // can only toggle from quick menu which will have User object configured
@@ -332,25 +301,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             showUserOnMap();
         }
     }
-
-
-/*    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case R.id.action_logout:
-                mAuth.signOut();
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }*/
 
 
     /***********************************************************************************************
@@ -367,10 +317,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         // get details from logged in user's database (run whenever values change in this specific node)
-        mFirebaseCurrentUserDatabaseRef.addValueEventListener(new ValueEventListener() {
+        mLoggedInFirebaseDatabaseRef.getFirebaseCurrentUserDatabaseRef().addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                FirebaseUser currentUserFirebase = dataSnapshot.getValue(FirebaseUser.class);
+                FirebaseUserModel currentUserFirebase = dataSnapshot.getValue(FirebaseUserModel.class);
+
 
                 // if we are loading map for first time, we dont have a user object
                 if (mFirstLoad) {
@@ -388,6 +339,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } else {
                     // update user object with updated data
                     // we do this so we dont reset the important stuff we are keeping track on in the User class
+
+                    // todo: i am tired rn so check if we actually need to update all these fields
+
                     mCurrentUser.setPictureUrl(currentUserFirebase.getPictureUrl());
                     mCurrentUser.setLatitude(currentUserFirebase.getLatitude());
                     mCurrentUser.setLongitude(currentUserFirebase.getLongitude());
@@ -411,6 +365,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // only set up listeners on friends on first load
                 if (mFirstLoad) {
                     mFirstLoad = false;
+                    mNavView.getMenu().findItem(R.id.friend_requests).setVisible(true);
                     Log.d(TAG, "Setting up firebase friends");
                     Log.d(TAG, "User's friends: " + currentUserFirebase.getFriends().values());
 
@@ -430,28 +385,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-    }
-
-
-    /*
-    Adds or removes a specified friend's marker from the mMap
-    Adding: making marker visible on mMap with any new changes to the user object (such as location, status msg, etc)
-    Removing: removes marker from mMap
-     */
-    private void refreshFriendMarker(FirebaseUser randomFriend) {
-
-        // check if friend is online or not
-        if (randomFriend.isOnline()) {
-
-            Log.d(TAG, randomFriend.getName() + " is an online friend");
-            addFriendMarker(randomFriend);
-
-        } else {
-
-            Log.d(TAG, randomFriend.getName() + " is an offline friend");
-            mGoogleMapHelper.removeFriendMarker(randomFriend, mCurrentUser);
-            mCurrentUser.removeOnlineFriendMarker(randomFriend.getId());
-        }
     }
 
 
@@ -503,7 +436,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /*
     Creates and places a friend marker on map
      */
-    public void addFriendMarker(final FirebaseUser friend) {
+    public void addFriendMarker(final FirebaseUserModel friend) {
 
         Marker friendMarker = mCurrentUser.getOnlineFriendMarker(friend.getId());
 
@@ -572,7 +505,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onLocationChanged(Location location) {
         Log.d(TAG, "Location updated. Callback run");
-        mCurrentFirebaseUserUtils.updateLocation(String.valueOf(location.getLongitude()), String.valueOf(location.getLatitude()));
+        mLoggedInFirebaseDatabaseRef.updateLocation(String.valueOf(location.getLongitude()), String.valueOf(location.getLatitude()));
     }
 
 
@@ -583,10 +516,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // create new database reference with this current friend's id and
         // add a value event lister to friend to listen for changes
-        mFirebaseAllUsersDatabaseRef.child(friend_id).addValueEventListener(new ValueEventListener() {
+        mLoggedInFirebaseDatabaseRef.getFirebaseAllUsersDatabaseRef().child(friend_id).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                FirebaseUser randomFriend = dataSnapshot.getValue(FirebaseUser.class);
+                FirebaseUserModel randomFriend = dataSnapshot.getValue(FirebaseUserModel.class);
                 refreshFriendMarker(randomFriend);
             }
 
@@ -598,6 +531,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    /*
+    Adds or removes a specified friend's marker from the mMap
+    Adding: making marker visible on mMap with any new changes to the user object (such as location, status msg, etc)
+    Removing: removes marker from mMap
+    */
+    private void refreshFriendMarker(FirebaseUserModel randomFriend) {
+
+        // check if friend is online or not
+        if (randomFriend.isOnline()) {
+
+            Log.d(TAG, randomFriend.getName() + " is an online friend");
+            addFriendMarker(randomFriend);
+
+        } else {
+
+            Log.d(TAG, randomFriend.getName() + " is an offline friend");
+            mGoogleMapHelper.removeFriendMarker(randomFriend, mCurrentUser);
+            mCurrentUser.removeOnlineFriendMarker(randomFriend.getId());
+        }
+    }
+
 
     /*
     When new friend is added, add value event listener to the new friend so that
@@ -605,7 +559,131 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onAddNewFriend(String friend_id) {
+        Log.d(TAG, "New friend was added. Adding marker");
         addValueEventListenerAndMarkerForFriend(friend_id); //REQUIRES MAP TO BE LOADED PRIOR TO CALLING THIS
+    }
+
+
+    /***********************************************************************************************
+     * ANIMATIONS
+     **********************************************************************************************/
+
+    public void toggleQuickMenuWithAnimation() {
+        ObjectAnimator menuAnimX;
+        ObjectAnimator menuItem1Anim;
+        ObjectAnimator menuItem2Anim;
+        ObjectAnimator menuItem3Anim;
+
+        // if it is hidden position, show menu
+        if (slideMenu.getTranslationX() != 0f) {
+            menuAnimX = ObjectAnimator.ofFloat(slideMenu, "translationX", 0f);
+            menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", 0f);
+            menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", 0f);
+            menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", 0f);
+            menuAnimX.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    slideMenuToggleBtn.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.right_arrow));
+                }
+            });
+        } else {
+            menuAnimX = ObjectAnimator.ofFloat(slideMenu, "translationX", MetricUtils.dpToPx(250));
+            menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", MetricUtils.dpToPx(210));
+            menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", MetricUtils.dpToPx(210));
+            menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", MetricUtils.dpToPx(210));
+            menuAnimX.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    slideMenuToggleBtn.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.left_arrow));
+                }
+            });
+        }
+
+        menuItem1Anim.setDuration(400);
+        menuItem2Anim.setDuration(500);
+        menuItem3Anim.setDuration(600);
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(menuAnimX, menuItem1Anim, menuItem2Anim, menuItem3Anim);
+        animatorSet.start();
+    }
+
+    /***********************************************************************************************
+     * MENU
+     **********************************************************************************************/
+
+/*    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_logout:
+                mAuth.signOut();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }*/
+
+    /**
+     * Navigation View
+     * --> name of user is displayed
+     * --> Home, Statistics, and Settings options
+     */
+    private void setupNavView() {
+        mNavView.setNavigationItemSelectedListener(this); // "this" because our navigation select listener is this activity (below) (implemented)
+
+        mDrawerToggle = new ActionBarDrawerToggle(this,
+                mDrawerLayout,
+                toolbar,
+                R.string.drawer_open,
+                R.string.drawer_close);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
+        mDrawerToggle.syncState();
+
+        ///HEADER VIEW
+
+        // todo: greet user with their name?
+
+        View v = mNavView.getHeaderView(0); ////////////////////////////////////////// <<<----this thing is duh best
+        TextView headerUsernameText = (TextView) v.findViewById(R.id.nameOfCurrentUser);
+        //headerUsernameText.setText();
+    }
+
+
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) { //nav drawer items on click
+
+        int current = item.getItemId();
+
+        switch (current) {
+            case R.id.home:
+                mDrawerLayout.closeDrawer(GravityCompat.START); //closes the drawer by setting the gravity to "start" (all the way to the left hidden)
+                break;
+            case R.id.friend_requests:
+                mDrawerLayout.closeDrawer(GravityCompat.START); //closes the drawer by setting the gravity to "start" (all the way to the left hidden)
+
+                // user has to be online to view friend requests
+                if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+                    new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+                } else {
+
+                    // todo: get the most up-to-date user's friend request list and pass that to the popup
+
+                    // ArrayList<String> friendRequests = new ArrayList<>(mCurrentUser.getFriendRequests().values());
+
+                    //pass emails to search popup so we know which emails are already friend's
+                    ViewFriendRequestsPopup p = new ViewFriendRequestsPopup();
+                    p.show(getSupportFragmentManager(), "ViewFriendRequestsPopup");
+                }
+
+                break;
+        }
+        return false;
     }
 }
 

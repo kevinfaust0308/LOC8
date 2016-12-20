@@ -2,7 +2,6 @@ package com.monsoonblessing.kevinfaust.loc8personal.Activities;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -53,10 +52,8 @@ public class LoginActivity extends AppCompatActivity {
         mProgressDialog = new ProgressDialog(this);
 
         mAuth = FirebaseAuth.getInstance();
-        if (mAuth.getCurrentUser() != null) {
-            // user is logged in so send them to main app
-            launchMainApp();
-        }
+        if (mAuth.getCurrentUser() != null)
+            launchMainApp(); // user is logged in so send them to main app
 
     }
 

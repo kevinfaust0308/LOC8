@@ -51,7 +51,7 @@ public class PasswordRequestPopup extends DialogFragment {
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        // FirebaseUser cancelled the dialog
+                        // FirebaseDatabaseReferences cancelled the dialog
                         dismiss();
                     }
                 });
