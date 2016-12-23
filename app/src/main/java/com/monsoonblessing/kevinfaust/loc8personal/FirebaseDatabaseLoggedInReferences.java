@@ -68,7 +68,7 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
         mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_PICTURE_URL_KEY).setValue(url);
     }
 
-    public void addFriend(String friend_id, String friend_email) {
+    public void addFriend(String friend_id, String friend_email, String current_user_email) {
         /*
         Adding is a two way thing. Both user and friend must appear in each other's friend's list and
         both shouldn't have each other under friend request's anymore
@@ -82,7 +82,7 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
         // go to the friend's database and go to the friends list
         mFirebaseAllUsersDatabaseRef.child(friend_id).child(FIREBASE_FRIENDS_KEY)
                 // add user to the friend's friend list with id and email of the user
-                .child(mCurrentUser.getUid()).setValue(mCurrentUser.getUid());
+                .child(mCurrentUser.getUid()).setValue(current_user_email);
 
         // user has been added so we can remove the friend request
         deleteFriendRequest(friend_id);

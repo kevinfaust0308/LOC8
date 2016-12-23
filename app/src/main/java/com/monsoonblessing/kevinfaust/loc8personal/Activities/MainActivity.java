@@ -35,12 +35,10 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -49,7 +47,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.monsoonblessing.kevinfaust.loc8personal.ConnectivityChangeReceiver;
 import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseLoggedInReferences;
-import com.monsoonblessing.kevinfaust.loc8personal.FirebaseDatabaseReferences;
 import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUserModel;
 import com.monsoonblessing.kevinfaust.loc8personal.GoogleMapHelper;
 import com.monsoonblessing.kevinfaust.loc8personal.InternetConnectivityUtils;
@@ -58,7 +55,6 @@ import com.monsoonblessing.kevinfaust.loc8personal.Popups.InternetRequiredPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.ViewFriendRequestsPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.R;
-import com.monsoonblessing.kevinfaust.loc8personal.User;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
@@ -77,6 +73,7 @@ import butterknife.OnClick;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ViewFriendRequestsPopup.FriendRequests {
 
     private static final String TAG = "MainActivity";
+    private static final int DEFAULT_MAP_ZOOM = 13;
 
     // VIEWS
     @BindView(R.id.statusMessage)
@@ -118,11 +115,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     // LISTEN TO LOGOUT
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
-    private User mCurrentUser; //contains current user object
+    FirebaseUserModel mCurrentUserFirebase;
     private boolean mFirstLoad = true; //so that we only assign the listeners to the friends once
 
     // will allow us to use images on the google map markers
     private ImageLoader imageLoader;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setSupportActionBar(toolbar); // toolbar set up
         setupNavView(); // nav drawer setup
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-        mGoogleMapHelper = new GoogleMapHelper(this);
+        mGoogleMapHelper = new GoogleMapHelper();
         buildGoogleApiClient();
 
         mLoggedInFirebaseDatabaseRef = new FirebaseDatabaseLoggedInReferences();
@@ -241,7 +239,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
         } else {
 
-            ArrayList<String> friendEmails = new ArrayList<>(mCurrentUser.getFriends().values());
+            // getFriends() -> friend-id : email
+            ArrayList<String> friendEmails = new ArrayList<>(mCurrentUserFirebase.getFriends().values());
 
             //pass emails to search popup so we know which emails are already friend's
             SearchFriendPopup p = new SearchFriendPopup().newInstance(friendEmails);
@@ -295,7 +294,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     */
     public void toggleUserVisibilityOnMap() {
         // can only toggle from quick menu which will have User object configured
-        if (mCurrentUser.isOnline()) {
+        if (mCurrentUserFirebase.isOnline()) {
             hideUserFromMap();
         } else {
             showUserOnMap();
@@ -320,43 +319,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mLoggedInFirebaseDatabaseRef.getFirebaseCurrentUserDatabaseRef().addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                FirebaseUserModel currentUserFirebase = dataSnapshot.getValue(FirebaseUserModel.class);
-
-
-                // if we are loading map for first time, we dont have a user object
-                if (mFirstLoad) {
-                    mCurrentUser = new User(
-                            currentUserFirebase.getId(),
-                            currentUserFirebase.getName(),
-                            currentUserFirebase.getEmail(),
-                            currentUserFirebase.getPictureUrl(),
-                            currentUserFirebase.getLatitude(),
-                            currentUserFirebase.getLongitude(),
-                            currentUserFirebase.getStatusMsg(),
-                            currentUserFirebase.isOnline(),
-                            currentUserFirebase.getFriends()
-                    );
-                } else {
-                    // update user object with updated data
-                    // we do this so we dont reset the important stuff we are keeping track on in the User class
-
-                    // todo: i am tired rn so check if we actually need to update all these fields
-
-                    mCurrentUser.setPictureUrl(currentUserFirebase.getPictureUrl());
-                    mCurrentUser.setLatitude(currentUserFirebase.getLatitude());
-                    mCurrentUser.setLongitude(currentUserFirebase.getLongitude());
-                    mCurrentUser.setStatusMsg(currentUserFirebase.getStatusMsg());
-                    mCurrentUser.setOnline(currentUserFirebase.isOnline());
-                    mCurrentUser.setFriends(currentUserFirebase.getFriends());
-                }
+                mCurrentUserFirebase = dataSnapshot.getValue(FirebaseUserModel.class);
 
                 // update user's status message
-                statusMessage.setText(mCurrentUser.getStatusMsg());
+                statusMessage.setText(mCurrentUserFirebase.getStatusMsg());
 
-                Log.d(TAG, "Online? " + mCurrentUser.isOnline());
+                Log.d(TAG, "Online? " + mCurrentUserFirebase.isOnline());
 
                 // create new user marker/update user marker on mMap
-                addUserMarker();
+                addUserMarkerToMap(mCurrentUserFirebase);
 
                 // user object fully initialized by this point so we can show the hidden menu whose
                 // functionality relies on the user object
@@ -367,14 +338,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     mFirstLoad = false;
                     mNavView.getMenu().findItem(R.id.friend_requests).setVisible(true);
                     Log.d(TAG, "Setting up firebase friends");
-                    Log.d(TAG, "User's friends: " + currentUserFirebase.getFriends().values());
+                    Log.d(TAG, "User's friends emails: " + mCurrentUserFirebase.getFriends().values());
 
                     // loop through the unique user id's of of each friend in user's friend list
-                    for (String friend_id : currentUserFirebase.getFriends().keySet()) {
+                    for (String friend_id : mCurrentUserFirebase.getFriends().keySet()) {
+                        // add a data change listener to each friend if online
                         addValueEventListenerAndMarkerForFriend(friend_id);
                     }
                     // center camera on user only on first load
-                    focusCamera(googleMap, mCurrentUser.getDoubleLatitude(), mCurrentUser.getDoubleLongitude(), 13);
+                    mGoogleMapHelper.focusMapCamera(
+                            googleMap,
+                            mCurrentUserFirebase.getDoubleLatitude(),
+                            mCurrentUserFirebase.getDoubleLongitude(),
+                            DEFAULT_MAP_ZOOM
+                    );
                 }
             }
 
@@ -388,45 +365,32 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
 
-    private void focusCamera(GoogleMap mappy, double latitude, double longitude, int zoom) {
-        // focus camera on user location
-        mappy.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
-        mappy.animateCamera(CameraUpdateFactory.zoomTo(zoom));
-    }
-
-
     /*
     Creates and places user marker on map
     */
-    public void addUserMarker() {
-
-        Marker userMarker = mCurrentUser.getCurrentUserMarker();
-        Log.d(TAG, "Current user marker: " + userMarker);
+    public void addUserMarkerToMap(FirebaseUserModel currentUserFirebase) {
 
         // remove user from map if marker already exists
-        mGoogleMapHelper.removeMarkerIfExist(userMarker);
+        mGoogleMapHelper.removeUserMarkerFromMapIfExist();
 
         // create new marker options
-        final MarkerOptions o = mGoogleMapHelper.setUpUserMarker(mCurrentUser);
+        final MarkerOptions newUserMarkerOptions = mGoogleMapHelper.createNewUserMarkerOptions(currentUserFirebase);
 
         // load friend's profile pic as marker on map
-        imageLoader.loadImage(mCurrentUser.getPictureUrl(), new SimpleImageLoadingListener() {
+        imageLoader.loadImage(currentUserFirebase.getPictureUrl(), new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
 
                 Bitmap resizedBitmap = Bitmap.createScaledBitmap(loadedImage, 150, 150, false);
 
-                o.icon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
+                newUserMarkerOptions.icon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
 
-                Marker m = mMap.addMarker(o);
+                Marker m = mMap.addMarker(newUserMarkerOptions);
 
                 Log.d(TAG, "Setting current user marker: " + m);
                 Log.d(TAG, "New user marker has following status msg: " + m.getSnippet());
                 // save current user's marker for later deletion/updation
-                mCurrentUser.setCurrentUserMarker(m);
-
-                Log.d(TAG, "CALLING GET CURRENT USER MARKER: " + mCurrentUser.getCurrentUserMarker());
-
+                mGoogleMapHelper.setCurrentUserMarker(m);
             }
         });
 
@@ -436,14 +400,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     /*
     Creates and places a friend marker on map
      */
-    public void addFriendMarker(final FirebaseUserModel friend) {
-
-        Marker friendMarker = mCurrentUser.getOnlineFriendMarker(friend.getId());
+    public void addFriendMarkerToMap(final FirebaseUserModel friend) {
 
         // remove friend from map if marker already exists
-        mGoogleMapHelper.removeMarkerIfExist(friendMarker);
+        mGoogleMapHelper.removeFriendMarkerFromMapIfExists(friend.getId());
 
-        final MarkerOptions o = mGoogleMapHelper.setUpFriendMarker(friend);
+        final MarkerOptions newFriendMarkerOptions = mGoogleMapHelper.createNewFriendMarkerOptions(friend);
 
         // load friend's profile pic as marker on map
         imageLoader.loadImage(friend.getPictureUrl(), new SimpleImageLoadingListener() {
@@ -452,10 +414,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                 Bitmap resizedBitmap = Bitmap.createScaledBitmap(loadedImage, 150, 150, false);
 
-                o.icon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
+                newFriendMarkerOptions.icon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
 
-                Marker m = mMap.addMarker(o);
-                mCurrentUser.addOnlineFriendMarker(friend.getId(), m);
+                Marker m = mMap.addMarker(newFriendMarkerOptions);
+                mGoogleMapHelper.addOnlineFriendMarkerToStorage(friend.getId(), m);
 
             }
         });
@@ -519,8 +481,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mLoggedInFirebaseDatabaseRef.getFirebaseAllUsersDatabaseRef().child(friend_id).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                FirebaseUserModel randomFriend = dataSnapshot.getValue(FirebaseUserModel.class);
-                refreshFriendMarker(randomFriend);
+                FirebaseUserModel updatedFriendData = dataSnapshot.getValue(FirebaseUserModel.class);
+                refreshFriendMarker(updatedFriendData);
             }
 
 
@@ -530,6 +492,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
     }
+
 
     /*
     Adds or removes a specified friend's marker from the mMap
@@ -542,13 +505,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (randomFriend.isOnline()) {
 
             Log.d(TAG, randomFriend.getName() + " is an online friend");
-            addFriendMarker(randomFriend);
+            addFriendMarkerToMap(randomFriend);
+            mGoogleMapHelper.addOnlineFriendToList(randomFriend);
 
         } else {
 
             Log.d(TAG, randomFriend.getName() + " is an offline friend");
-            mGoogleMapHelper.removeFriendMarker(randomFriend, mCurrentUser);
-            mCurrentUser.removeOnlineFriendMarker(randomFriend.getId());
+            mGoogleMapHelper.removeFriendMarkerFromMapIfExists(randomFriend.getId());
+            mGoogleMapHelper.removeOfflineFriendFromList(randomFriend);
         }
     }
 
@@ -611,24 +575,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      * MENU
      **********************************************************************************************/
 
-/*    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case R.id.action_logout:
-                mAuth.signOut();
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }*/
-
     /**
      * Navigation View
      * --> name of user is displayed
@@ -650,7 +596,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // todo: greet user with their name?
 
         View v = mNavView.getHeaderView(0); ////////////////////////////////////////// <<<----this thing is duh best
-        TextView headerUsernameText = (TextView) v.findViewById(R.id.nameOfCurrentUser);
+        // TextView headerUsernameText = (TextView) v.findViewById(R.id.nameOfCurrentUser);
         //headerUsernameText.setText();
     }
 
@@ -672,12 +618,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
                 } else {
 
-                    // todo: get the most up-to-date user's friend request list and pass that to the popup
-
-                    // ArrayList<String> friendRequests = new ArrayList<>(mCurrentUser.getFriendRequests().values());
-
                     //pass emails to search popup so we know which emails are already friend's
                     ViewFriendRequestsPopup p = new ViewFriendRequestsPopup();
+                    Bundle b = new Bundle();
+                    b.putString("UserEmail", mCurrentUserFirebase.getEmail());
+                    p.setArguments(b);
                     p.show(getSupportFragmentManager(), "ViewFriendRequestsPopup");
                 }
 

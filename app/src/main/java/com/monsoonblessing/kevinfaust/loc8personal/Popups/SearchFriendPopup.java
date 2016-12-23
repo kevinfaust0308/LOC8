@@ -161,9 +161,6 @@ public class SearchFriendPopup extends DialogFragment {
         //only do search if search is not empty and search doesn't equal current user's email
         if (!TextUtils.isEmpty(searchText)) {
 
-
-            //TODO: we find user, user details get populated and add button appears but if we search again and no results come back, ui wont update. good enough for demo
-
             // check if their exists an email with that search text
             Query queryRef = mFirebaseDatabaseLoggedInReferences.getFirebaseAllUsersDatabaseRef().orderByChild("email").equalTo(searchText);
 

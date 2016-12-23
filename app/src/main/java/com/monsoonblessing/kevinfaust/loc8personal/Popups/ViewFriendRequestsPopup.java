@@ -42,6 +42,8 @@ public class ViewFriendRequestsPopup extends DialogFragment {
 
     private ProgressDialog progressDialog;
 
+    private String mCurrentUserEmail;
+
     public interface FriendRequests {
         void onAddNewFriend(String friend_id);
     }
@@ -62,6 +64,7 @@ public class ViewFriendRequestsPopup extends DialogFragment {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.view_friend_requests_popup, null);
         ButterKnife.bind(this, v);
         progressDialog = new ProgressDialog(getActivity());
+        mCurrentUserEmail = getArguments().getString("UserEmail");
 
         mFirebaseDatabaseLoggedInReferences = new FirebaseDatabaseLoggedInReferences();
 
@@ -85,7 +88,6 @@ public class ViewFriendRequestsPopup extends DialogFragment {
                 });
         // Create the AlertDialog object and return it
         return builder.create();
-
     }
 
     @Override
@@ -114,7 +116,7 @@ public class ViewFriendRequestsPopup extends DialogFragment {
                     viewHolder.acceptRequest.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            mFirebaseDatabaseLoggedInReferences.addFriend(model.getId(), model.getEmail());
+                            mFirebaseDatabaseLoggedInReferences.addFriend(model.getId(), model.getEmail(), mCurrentUserEmail);
 
                             // tell main activity to hook on event listener/marker configuration for this newly added friend
                             ((FriendRequests) getActivity()).onAddNewFriend(model.getId());

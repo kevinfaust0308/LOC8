@@ -1,5 +1,7 @@
 package com.monsoonblessing.kevinfaust.loc8personal;
 
+import com.google.android.gms.maps.model.Marker;
+
 import java.util.Map;
 
 /**
@@ -11,6 +13,8 @@ public class FirebaseUserModel {
     private String id, name, email, pictureUrl, latitude, longitude, statusMsg;
     private boolean online;
     private Map<String, String> friends;
+    private Marker mapMarker;
+
 
     public FirebaseUserModel() {
     }
@@ -105,5 +109,15 @@ public class FirebaseUserModel {
 
     public double getDoubleLongitude() {
         return Double.parseDouble(this.longitude);
+    }
+
+
+    public Marker getMapMarker() {
+        return mapMarker;
+    }
+
+
+    public void setMapMarker(Marker mapMarker) {
+        this.mapMarker = mapMarker;
     }
 }
