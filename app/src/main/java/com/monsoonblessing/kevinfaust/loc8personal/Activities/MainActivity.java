@@ -506,13 +506,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             Log.d(TAG, randomFriend.getName() + " is an online friend");
             addFriendMarkerToMap(randomFriend);
-            mGoogleMapHelper.addOnlineFriendToList(randomFriend);
+
+            // add this online friend to navigationview list adapter
 
         } else {
 
             Log.d(TAG, randomFriend.getName() + " is an offline friend");
             mGoogleMapHelper.removeFriendMarkerFromMapIfExists(randomFriend.getId());
-            mGoogleMapHelper.removeOfflineFriendFromList(randomFriend);
+
+            // remove friend from navigationview list adapter
         }
     }
 

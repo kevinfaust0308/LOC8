@@ -13,8 +13,6 @@ public class FirebaseUserModel {
     private String id, name, email, pictureUrl, latitude, longitude, statusMsg;
     private boolean online;
     private Map<String, String> friends;
-    private Marker mapMarker;
-
 
     public FirebaseUserModel() {
     }
@@ -111,13 +109,4 @@ public class FirebaseUserModel {
         return Double.parseDouble(this.longitude);
     }
 
-
-    public Marker getMapMarker() {
-        return mapMarker;
-    }
-
-
-    public void setMapMarker(Marker mapMarker) {
-        this.mapMarker = mapMarker;
-    }
 }

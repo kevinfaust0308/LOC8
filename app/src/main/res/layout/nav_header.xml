@@ -36,7 +36,7 @@
             android:id="@+id/nameOfCurrentUser"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Guest"
+            android:text=""
             android:textColor="@color/md_white_1000"
             android:textSize="16sp"/>
 

@@ -36,7 +36,7 @@
                 android:src="@drawable/search_bigger"
                 android:textStyle="bold"
                 android:textColor="#ffffffff"
-                android:background="@color/md_teal_400"
+                android:background="@color/md_teal_800"
                 android:id="@+id/search_btn"
                 android:layout_width="70dp"
                 android:scaleType="centerInside"

@@ -1,28 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="15dp"
-    android:orientation="horizontal">
+              android:layout_width="match_parent"
+              android:background="@drawable/left_border"
+              android:layout_height="wrap_content"
+              android:gravity="center_vertical"
+              android:orientation="horizontal"
+              android:layout_marginTop="3dp"
+              android:layout_marginBottom="3dp"
+              android:padding="10dp">
 
     <TextView
-        android:layout_marginRight="20dp"
         android:id="@+id/email"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Email goes here" />
+        android:text="Email goes here"/>
 
-    <Button
-        android:layout_marginRight="10dp"
-        android:id="@+id/acceptRequest"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Accept"/>
+        android:gravity="right">
 
-    <Button
-        android:id="@+id/deleteRequest"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Delete"/>
+        <ImageButton
+            android:id="@+id/acceptRequest"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginRight="17dp"
+            android:background="#00000000"
+            android:contentDescription="confirmRequest"
+            android:scaleType="centerInside"
+            android:src="@drawable/confirm"/>
+
+        <ImageButton
+            android:id="@+id/deleteRequest"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="#00000000"
+            android:contentDescription="cancelRequest"
+            android:scaleType="centerInside"
+            android:src="@drawable/cancel"
+            android:text="Delete"/>
+
+    </LinearLayout>
+
 
 </LinearLayout>

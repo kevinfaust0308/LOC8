@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -40,8 +41,7 @@ public class ViewFriendRequestsPopup extends DialogFragment {
     private FirebaseRecyclerAdapter<FirebaseFriendRequestModel, FriendRequestViewHolder> mFirebaseRecyclerAdapter;
     private FirebaseDatabaseLoggedInReferences mFirebaseDatabaseLoggedInReferences;
 
-    private ProgressDialog progressDialog;
-
+    // need this when adding a new friend. friends are stored in database as -> id : email
     private String mCurrentUserEmail;
 
     public interface FriendRequests {
@@ -49,21 +49,11 @@ public class ViewFriendRequestsPopup extends DialogFragment {
     }
 
 
-
-        /* todo: this is all copy pasted code so clean this up
-       todo: we get passed in a friend request map, need some way to get the requesting person's name
-       todo: display all friend requests reverse order and have option to accept or delete (recyclerview/listview?)
-       todo: CurrentFireUserUtils has friend request deletion and friend adding methods
-       todo: if we accept, add the friend and delete the friend request
-       todo: if we just delete, remove the friend request
-    */
-
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.view_friend_requests_popup, null);
         ButterKnife.bind(this, v);
-        progressDialog = new ProgressDialog(getActivity());
         mCurrentUserEmail = getArguments().getString("UserEmail");
 
         mFirebaseDatabaseLoggedInReferences = new FirebaseDatabaseLoggedInReferences();
@@ -73,22 +63,16 @@ public class ViewFriendRequestsPopup extends DialogFragment {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setView(v);
-        builder.setMessage("Add new friend")
-                /*.setPositiveButton("Send", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-
-
-                    }
-                })*/
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // FirebaseDatabaseReferences cancelled the dialog
-                        dismiss();
-                    }
-                });
+        builder.setNegativeButton("Dismiss", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // FirebaseDatabaseReferences cancelled the dialog
+                dismiss();
+            }
+        });
         // Create the AlertDialog object and return it
         return builder.create();
     }
+
 
     @Override
     public void onStart() {
@@ -104,39 +88,35 @@ public class ViewFriendRequestsPopup extends DialogFragment {
             protected void populateViewHolder(FriendRequestViewHolder viewHolder, final FirebaseFriendRequestModel model, int position) {
                 Log.d(TAG, model.toString());
 
-                // omit the default LOC8 friend request by hiding the row
-                if (model.getId().equals(FirebaseDatabaseReferences.LOC8_DEFAULT_FRIEND_ID)) {
-                    viewHolder.itemView.setVisibility(View.GONE);
-                } else {
-                    viewHolder.itemView.setVisibility(View.VISIBLE);
-                    // get friend requester's email and display it
-                    viewHolder.setEmail(model.getEmail());
+                // get friend requester's email and display it
+                viewHolder.setEmail(model.getEmail());
 
-                    // on accept, add the friend request
-                    viewHolder.acceptRequest.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            mFirebaseDatabaseLoggedInReferences.addFriend(model.getId(), model.getEmail(), mCurrentUserEmail);
+                // on accept, add the friend request
+                viewHolder.acceptRequest.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mFirebaseDatabaseLoggedInReferences.addFriend(model.getId(), model.getEmail(), mCurrentUserEmail);
 
-                            // tell main activity to hook on event listener/marker configuration for this newly added friend
-                            ((FriendRequests) getActivity()).onAddNewFriend(model.getId());
-                        }
-                    });
+                        // tell main activity to hook on event listener/marker configuration for this newly added friend
+                        ((FriendRequests) getActivity()).onAddNewFriend(model.getId());
+                    }
+                });
 
-                    // on delete, remove the friend request
-                    viewHolder.deleteRequest.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            mFirebaseDatabaseLoggedInReferences.deleteFriendRequest(model.getId());
-                        }
-                    });
-                }
+                // on delete, remove the friend request
+                viewHolder.deleteRequest.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mFirebaseDatabaseLoggedInReferences.deleteFriendRequest(model.getId());
+                    }
+                });
             }
+
 
         };
 
         recyclerView.setAdapter(mFirebaseRecyclerAdapter);
     }
+
 
     @Override
     public void onStop() {
@@ -144,23 +124,23 @@ public class ViewFriendRequestsPopup extends DialogFragment {
         mFirebaseRecyclerAdapter.cleanup();
     }
 
+
     public static class FriendRequestViewHolder extends RecyclerView.ViewHolder {
 
         @BindView(R.id.email)
         TextView email;
         @BindView(R.id.acceptRequest)
-        Button acceptRequest;
+        ImageButton acceptRequest;
         @BindView(R.id.deleteRequest)
-        Button deleteRequest;
+        ImageButton deleteRequest;
 
-        View itemView;
 
         public FriendRequestViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
             email = (TextView) itemView.findViewById(R.id.email);
-            this.itemView = itemView;
         }
+
 
         public void setEmail(String email) {
             this.email.setText(email);

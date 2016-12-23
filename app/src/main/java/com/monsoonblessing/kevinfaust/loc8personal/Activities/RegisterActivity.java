@@ -140,15 +140,6 @@ public class RegisterActivity extends AppCompatActivity {
                                 // map of all our friends. all users have LOC8 as a friend
                                 currentUserDb.child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY).child(FirebaseDatabaseReferences.LOC8_DEFAULT_FRIEND_ID).setValue("LOC8");
 
-                                // todo: currently the default friend request list contains the loc8 master acc
-                                // todo: for now we only store id and email for a friend request
-                                // map of all our friend requests to boilerplate data
-                                DatabaseReference tempFriendRequests = firebaseDatabaseLoggedInReferences
-                                        .getFirebaseCurrentUserFriendRequestsDatabaseRef()
-                                        .child(FirebaseDatabaseReferences.LOC8_DEFAULT_FRIEND_ID);
-                                tempFriendRequests.child(FirebaseDatabaseReferences.FIREBASE_ID_KEY).setValue(FirebaseDatabaseReferences.LOC8_DEFAULT_FRIEND_ID);
-                                tempFriendRequests.child(FirebaseDatabaseReferences.FIREBASE_EMAIL_KEY).setValue("Placeholder friend request. LOC8 default");
-
                                 // hardcoded location values to new york
                                 currentUserDb.child(FirebaseDatabaseReferences.FIREBASE_LATITUDE_KEY).setValue("40.730610");
                                 currentUserDb.child(FirebaseDatabaseReferences.FIREBASE_LONGITUDE_KEY).setValue("-73.935242");
