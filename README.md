@@ -2,9 +2,10 @@
 
 ## See where friends are at in real-time!
 ### Currently being redeveloped into a full functional app by myself :raised_hands:
+Playstore download link: https://goo.gl/2jo97C
 
 #### Update December 23, 2016
-- ALPHA TESTING RELEASED ON PLAY STORE
+- VERSION 1 RELEASED ON PLAY STORE
 - friend request system fully functional
 - ability to delete friends
 - navigation menu shows your online friends
