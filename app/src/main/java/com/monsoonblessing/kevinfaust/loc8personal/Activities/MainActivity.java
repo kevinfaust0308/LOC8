@@ -19,19 +19,25 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.fitness.data.Value;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -39,6 +45,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -51,6 +58,8 @@ import com.monsoonblessing.kevinfaust.loc8personal.FirebaseUserModel;
 import com.monsoonblessing.kevinfaust.loc8personal.GoogleMapHelper;
 import com.monsoonblessing.kevinfaust.loc8personal.InternetConnectivityUtils;
 import com.monsoonblessing.kevinfaust.loc8personal.MetricUtils;
+import com.monsoonblessing.kevinfaust.loc8personal.OnlineFriendsListViewAdapter;
+import com.monsoonblessing.kevinfaust.loc8personal.Popups.HelpPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.InternetRequiredPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup;
 import com.monsoonblessing.kevinfaust.loc8personal.Popups.ViewFriendRequestsPopup;
@@ -60,6 +69,8 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -70,7 +81,7 @@ import butterknife.OnClick;
  */
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ViewFriendRequestsPopup.FriendRequests {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ViewFriendRequestsPopup.FriendRequests, SearchFriendPopup.FriendSearch {
 
     private static final String TAG = "MainActivity";
     private static final int DEFAULT_MAP_ZOOM = 13;
@@ -84,12 +95,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     LinearLayout slideMenu;
     @BindView(R.id.slide_menu_toggle_btn)
     ImageView slideMenuToggleBtn;
+    @BindView(R.id.friendsListView)
+    ListView friendListView;
     @BindView(R.id.changeStatusAvailability)
     TextView menuItem1;
     @BindView(R.id.search_btn)
     TextView menuItem2;
-    @BindView(R.id.logout)
+    @BindView(R.id.friend_req_btn)
     TextView menuItem3;
+    @BindView(R.id.logout)
+    TextView menuItem4;
     @BindView(R.id.tool_bar)
     Toolbar toolbar;
     //////////////////////////////For the Navigation Drawer//////////////////////
@@ -108,6 +123,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private GoogleMapHelper mGoogleMapHelper;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
+
+    // have handle on all the firebase event listeners
+    // friend_id : listener
+    // when we delete a friend, we want to remove the listener
+    Map<String, ValueEventListener> mFriendsValueEventListeners = new HashMap<>();
 
     // Database reference to all+user's data
     private FirebaseDatabaseLoggedInReferences mLoggedInFirebaseDatabaseRef;
@@ -130,8 +150,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setSupportActionBar(toolbar); // toolbar set up
         setupNavView(); // nav drawer setup
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-        mGoogleMapHelper = new GoogleMapHelper();
+        mGoogleMapHelper = new GoogleMapHelper(this);
         buildGoogleApiClient();
+
+        // listview
+        friendListView.setAdapter(mGoogleMapHelper.getOnlineFriendsListViewAdapter());
+        friendListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Marker m = (Marker) friendListView.getItemAtPosition(position);
+                LatLng pos = m.getPosition();
+
+                // goto the friend's location in the map
+                mGoogleMapHelper.focusMapCamera(mMap, pos.latitude, pos.longitude, DEFAULT_MAP_ZOOM);
+
+                closeNavigationViewDrawer();
+            }
+        });
+
 
         mLoggedInFirebaseDatabaseRef = new FirebaseDatabaseLoggedInReferences();
 
@@ -248,6 +284,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    @OnClick(R.id.friend_req_btn) void viewFriendReqs() {
+        if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
+            new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
+        } else {
+            //pass emails to search popup so we know which emails are already friend's
+            ViewFriendRequestsPopup p = new ViewFriendRequestsPopup();
+            Bundle b = new Bundle();
+            b.putString("UserEmail", mCurrentUserFirebase.getEmail());
+            p.setArguments(b);
+            p.show(getSupportFragmentManager(), "ViewFriendRequestsPopup");
+        }
+    }
+
 
     /*
     Remove user from mMap as they signout
@@ -336,7 +385,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 // only set up listeners on friends on first load
                 if (mFirstLoad) {
                     mFirstLoad = false;
-                    mNavView.getMenu().findItem(R.id.friend_requests).setVisible(true);
                     Log.d(TAG, "Setting up firebase friends");
                     Log.d(TAG, "User's friends emails: " + mCurrentUserFirebase.getFriends().values());
 
@@ -402,9 +450,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      */
     public void addFriendMarkerToMap(final FirebaseUserModel friend) {
 
-        // remove friend from map if marker already exists
-        mGoogleMapHelper.removeFriendMarkerFromMapIfExists(friend.getId());
-
         final MarkerOptions newFriendMarkerOptions = mGoogleMapHelper.createNewFriendMarkerOptions(friend);
 
         // load friend's profile pic as marker on map
@@ -417,8 +462,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 newFriendMarkerOptions.icon(BitmapDescriptorFactory.fromBitmap(resizedBitmap));
 
                 Marker m = mMap.addMarker(newFriendMarkerOptions);
+
+                // keep track of this online user marker
                 mGoogleMapHelper.addOnlineFriendMarkerToStorage(friend.getId(), m);
 
+                // make this online user appear in listview
+                mGoogleMapHelper.addFriendToListView(m);
             }
         });
 
@@ -441,8 +490,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "Connected to google api client");
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setFastestInterval(5000);
-        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(30000);
+        mLocationRequest.setInterval(30000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         /* google api client is built only when we have the permissions so this check is redundant but
         android doesn't know so i will leave this here */
@@ -478,7 +527,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // create new database reference with this current friend's id and
         // add a value event lister to friend to listen for changes
-        mLoggedInFirebaseDatabaseRef.getFirebaseAllUsersDatabaseRef().child(friend_id).addValueEventListener(new ValueEventListener() {
+        ValueEventListener listener = mLoggedInFirebaseDatabaseRef.getFirebaseAllUsersDatabaseRef().child(friend_id).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 FirebaseUserModel updatedFriendData = dataSnapshot.getValue(FirebaseUserModel.class);
@@ -491,15 +540,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             }
         });
+
+        mFriendsValueEventListeners.put(friend_id, listener);
     }
 
 
     /*
+    Called upon a specific friend when their data changes
+
     Adds or removes a specified friend's marker from the mMap
     Adding: making marker visible on mMap with any new changes to the user object (such as location, status msg, etc)
     Removing: removes marker from mMap
     */
     private void refreshFriendMarker(FirebaseUserModel randomFriend) {
+
+        mGoogleMapHelper.removeFriendMarkerFromMapIfExists(randomFriend.getId());
 
         // check if friend is online or not
         if (randomFriend.isOnline()) {
@@ -507,14 +562,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Log.d(TAG, randomFriend.getName() + " is an online friend");
             addFriendMarkerToMap(randomFriend);
 
-            // add this online friend to navigationview list adapter
-
         } else {
 
             Log.d(TAG, randomFriend.getName() + " is an offline friend");
-            mGoogleMapHelper.removeFriendMarkerFromMapIfExists(randomFriend.getId());
 
-            // remove friend from navigationview list adapter
         }
     }
 
@@ -529,6 +580,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         addValueEventListenerAndMarkerForFriend(friend_id); //REQUIRES MAP TO BE LOADED PRIOR TO CALLING THIS
     }
 
+    /*
+    When friend is deleted, remove value event listener
+    */
+    @Override
+    public void onDeleteFriend(String friend_id) {
+        Log.d(TAG, "Friend deleted");
+
+        // get listener of this friend
+        ValueEventListener listener = mFriendsValueEventListeners.get(friend_id);
+        Log.d(TAG, "Removing following friend listener " + listener.toString());
+        // remove value event listener for this friend
+        mFriendsValueEventListeners.remove(friend_id);
+        // remove listener for firebase
+        mLoggedInFirebaseDatabaseRef.getFirebaseAllUsersDatabaseRef().child(friend_id).removeEventListener(listener);
+
+        // // remove friend from map and listview
+        mGoogleMapHelper.removeFriendMarkerFromMapIfExists(friend_id);
+
+    }
+
 
     /***********************************************************************************************
      * ANIMATIONS
@@ -539,6 +610,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ObjectAnimator menuItem1Anim;
         ObjectAnimator menuItem2Anim;
         ObjectAnimator menuItem3Anim;
+        ObjectAnimator menuItem4Anim;
 
         // if it is hidden position, show menu
         if (slideMenu.getTranslationX() != 0f) {
@@ -546,6 +618,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", 0f);
             menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", 0f);
             menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", 0f);
+            menuItem4Anim = ObjectAnimator.ofFloat(menuItem4, "translationX", 0f);
             menuAnimX.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -557,6 +630,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             menuItem1Anim = ObjectAnimator.ofFloat(menuItem1, "translationX", MetricUtils.dpToPx(210));
             menuItem2Anim = ObjectAnimator.ofFloat(menuItem2, "translationX", MetricUtils.dpToPx(210));
             menuItem3Anim = ObjectAnimator.ofFloat(menuItem3, "translationX", MetricUtils.dpToPx(210));
+            menuItem4Anim = ObjectAnimator.ofFloat(menuItem4, "translationX", MetricUtils.dpToPx(210));
             menuAnimX.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -565,11 +639,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             });
         }
 
-        menuItem1Anim.setDuration(400);
-        menuItem2Anim.setDuration(500);
-        menuItem3Anim.setDuration(600);
+        menuItem1Anim.setDuration(300);
+        menuItem2Anim.setDuration(375);
+        menuItem3Anim.setDuration(450);
+        menuItem4Anim.setDuration(525);
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(menuAnimX, menuItem1Anim, menuItem2Anim, menuItem3Anim);
+        animatorSet.playTogether(menuAnimX, menuItem1Anim, menuItem2Anim, menuItem3Anim, menuItem4Anim);
         animatorSet.start();
     }
 
@@ -577,14 +652,35 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      * MENU
      **********************************************************************************************/
 
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_help:
+                HelpPopup h = new HelpPopup();
+                h.show(getFragmentManager(), "HelpPopup");
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+
+    }
+
+
     /**
      * Navigation View
      * --> name of user is displayed
      * --> Home, Statistics, and Settings options
      */
     private void setupNavView() {
-        mNavView.setNavigationItemSelectedListener(this); // "this" because our navigation select listener is this activity (below) (implemented)
-
         mDrawerToggle = new ActionBarDrawerToggle(this,
                 mDrawerLayout,
                 toolbar,
@@ -595,42 +691,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         ///HEADER VIEW
 
-        // todo: greet user with their name?
+        // todo: do something dynamic with header view?
 
-        View v = mNavView.getHeaderView(0); ////////////////////////////////////////// <<<----this thing is duh best
+        // View v = mNavView.getHeaderView(0); ////////////////////////////////////////// <<<----this thing is duh best
         // TextView headerUsernameText = (TextView) v.findViewById(R.id.nameOfCurrentUser);
         //headerUsernameText.setText();
     }
 
 
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item) { //nav drawer items on click
-
-        int current = item.getItemId();
-
-        switch (current) {
-            case R.id.home:
-                mDrawerLayout.closeDrawer(GravityCompat.START); //closes the drawer by setting the gravity to "start" (all the way to the left hidden)
-                break;
-            case R.id.friend_requests:
-                mDrawerLayout.closeDrawer(GravityCompat.START); //closes the drawer by setting the gravity to "start" (all the way to the left hidden)
-
-                // user has to be online to view friend requests
-                if (!InternetConnectivityUtils.isConnectedToInternet(this)) {
-                    new InternetRequiredPopup().newInstance().show(getSupportFragmentManager(), "Internet Required Popup");
-                } else {
-
-                    //pass emails to search popup so we know which emails are already friend's
-                    ViewFriendRequestsPopup p = new ViewFriendRequestsPopup();
-                    Bundle b = new Bundle();
-                    b.putString("UserEmail", mCurrentUserFirebase.getEmail());
-                    p.setArguments(b);
-                    p.show(getSupportFragmentManager(), "ViewFriendRequestsPopup");
-                }
-
-                break;
-        }
-        return false;
+    public void closeNavigationViewDrawer() {
+        mDrawerLayout.closeDrawer(GravityCompat.START); //closes the drawer by setting the gravity to "start" (all the way to the left hidden)
     }
 }
 

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:padding="16dp"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/help"/>
+
+    <TextView
+        android:padding="15dp"
+        android:layout_gravity="center_horizontal"
+        android:textSize="16sp"
+        android:textColor="@color/md_grey_900"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Quick help"/>
+
+    <TextView
+        android:background="@drawable/left_border"
+        android:paddingLeft="10dp"
+        android:textColor="@color/md_black_1000"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Changing visibility: instantly show or hide yourself on your friends' map"/>
+
+    <TextView
+        android:layout_marginTop="2dp"
+        android:textColor="@color/md_black_1000"
+        android:background="@drawable/left_border"
+        android:paddingLeft="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Find friends: send friend requests or delete current friends"/>
+    <TextView
+        android:layout_marginTop="2dp"
+        android:textColor="@color/md_black_1000"
+        android:background="@drawable/left_border"
+        android:paddingLeft="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Friend requests: requests from other people will show here. Please make sure to only add those you know"/>
+
+    <View
+        android:background="@android:color/darker_gray"
+        android:layout_marginTop="7dp"
+        android:layout_marginBottom="7dp"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <TextView
+        android:textColor="@color/md_black_1000"
+        android:background="@drawable/left_border"
+        android:paddingLeft="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="If location sharing is on, it will update every 30 seconds"/>
+
+    <TextView
+        android:background="@drawable/left_border"
+        android:paddingLeft="10dp"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/md_black_1000"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tapping an online friend from the left menu will take you to their location"/>
+
+    <View
+        android:background="@android:color/darker_gray"
+        android:layout_marginTop="7dp"
+        android:layout_marginBottom="7dp"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <TextView
+        android:gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="If you wish to see any new features, please leave a comment in the play store"/>
+
+</LinearLayout>

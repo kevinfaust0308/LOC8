@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/search_popup"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup">
+              xmlns:tools="http://schemas.android.com/tools"
+              android:id="@+id/search_popup"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              android:paddingBottom="@dimen/activity_vertical_margin"
+              android:paddingLeft="16dp"
+              android:paddingRight="16dp"
+              android:paddingTop="@dimen/activity_vertical_margin"
+              tools:context="com.monsoonblessing.kevinfaust.loc8personal.Popups.SearchFriendPopup">
 
     <LinearLayout
-        android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
         android:gravity="bottom"
         android:orientation="horizontal">
 
@@ -22,37 +22,37 @@
             android:id="@+id/search_field"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textSize="15sp"
             android:ems="10"
             android:hint="Search user by email"
-            android:inputType="textPersonName" />
+            android:inputType="textPersonName"/>
 
         <LinearLayout
-            android:gravity="right"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:gravity="right">
 
             <ImageButton
-                android:padding="10dp"
-                android:src="@drawable/search_bigger"
-                android:textStyle="bold"
-                android:textColor="#ffffffff"
-                android:background="@color/md_teal_800"
                 android:id="@+id/search_btn"
                 android:layout_width="70dp"
-                android:scaleType="centerInside"
                 android:layout_height="40dp"
-                android:text="Search" />
+                android:background="@color/md_blue_400"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/search_bigger"
+                android:text="Search"
+                android:textColor="#ffffffff"
+                android:textStyle="bold"/>
 
         </LinearLayout>
-
 
 
     </LinearLayout>
 
     <View
-        android:layout_marginTop="25dp"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="15dp"
         android:background="@android:color/darker_gray"/>
 
     <!--    <TextView
@@ -62,6 +62,7 @@
             android:text="Search Result: " />-->
 
     <LinearLayout
+        android:id="@+id/searchResult"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
@@ -76,17 +77,17 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_marginRight="10dp"
                 android:id="@+id/search_profile_pic_result"
                 android:layout_width="65dp"
                 android:layout_height="65dp"
-                android:contentDescription="PROFILE_PIC_HERE" />
+                android:layout_marginRight="10dp"
+                android:contentDescription="PROFILE_PIC_HERE"/>
 
             <TextView
                 android:id="@+id/search_user_name_result"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp" />
+                android:layout_marginLeft="10dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -94,14 +95,25 @@
                 android:gravity="right">
 
                 <Button
-                    android:padding="5dp"
-                    android:background="@color/md_teal_50"
-                    android:textStyle="bold"
-                    android:id="@+id/add_user_btn"
-                    android:visibility="gone"
+                    android:id="@+id/delete_user_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Add" />
+                    android:background="@color/md_red_50"
+                    android:padding="5dp"
+                    android:text="Delete"
+                    android:textColor="@color/md_red_900"
+                    android:textStyle="bold"
+                    android:visibility="gone"/>
+
+                <Button
+                    android:id="@+id/add_user_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@color/md_blue_50"
+                    android:padding="5dp"
+                    android:visibility="gone"
+                    android:text="Add"
+                    android:textStyle="bold"/>
             </LinearLayout>
 
 

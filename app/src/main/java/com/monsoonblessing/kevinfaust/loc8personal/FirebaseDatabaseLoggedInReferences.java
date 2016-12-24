@@ -22,6 +22,7 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
 
     private com.google.firebase.auth.FirebaseUser mCurrentUser;
 
+
     public FirebaseDatabaseLoggedInReferences() {
 
         // user should be logged in if we are here
@@ -31,17 +32,21 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
 
     }
 
+
     public FirebaseUser getCurrentUser() {
         return mCurrentUser;
     }
+
 
     public DatabaseReference getFirebaseCurrentUserDatabaseRef() {
         return mFirebaseCurrentUserDatabaseRef;
     }
 
+
     public DatabaseReference getFirebaseCurrentUserFriendRequestsDatabaseRef() {
         return mFirebaseCurrentUserFriendRequestsDatabaseRef;
     }
+
 
     public void makeOffline() {
         mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_ONLINE_KEY).setValue(false);
@@ -68,21 +73,31 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
         mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_PICTURE_URL_KEY).setValue(url);
     }
 
+
+    private DatabaseReference friendNodeWithinUserFriendsDatabaseRef(String friend_id) {
+        // in current user's database, go to the friends list
+        return mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY)
+                // add the new friend to the user's friend list with the id and email of the friend
+                .child(friend_id);
+    }
+
+
+    private DatabaseReference userNodeWithinFriendFriendsDatabaseRef(String friend_id) {
+        // go to the friend's database and go to the friends list
+        return mFirebaseAllUsersDatabaseRef.child(friend_id).child(FIREBASE_FRIENDS_KEY)
+                // add user to the friend's friend list with id and email of the user
+                .child(mCurrentUser.getUid());
+    }
+
+
     public void addFriend(String friend_id, String friend_email, String current_user_email) {
         /*
         Adding is a two way thing. Both user and friend must appear in each other's friend's list and
         both shouldn't have each other under friend request's anymore
          */
 
-        // in current user's database, go to the friends list
-        mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY)
-                // add the new friend to the user's friend list with the id and email of the friend
-                .child(friend_id).setValue(friend_email);
-
-        // go to the friend's database and go to the friends list
-        mFirebaseAllUsersDatabaseRef.child(friend_id).child(FIREBASE_FRIENDS_KEY)
-                // add user to the friend's friend list with id and email of the user
-                .child(mCurrentUser.getUid()).setValue(current_user_email);
+        friendNodeWithinUserFriendsDatabaseRef(friend_id).setValue(friend_email);
+        userNodeWithinFriendFriendsDatabaseRef(friend_id).setValue(current_user_email);
 
         // user has been added so we can remove the friend request
         deleteFriendRequest(friend_id);
@@ -93,9 +108,12 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
             mFirebaseAllFriendRequestsDatabaseRef.child(friend_id).child(mCurrentUser.getUid()).removeValue();
     }
 
+
     public void removeFriend(String friend_id) {
-        mFirebaseCurrentUserDatabaseRef.child(FirebaseDatabaseReferences.FIREBASE_FRIENDS_KEY).child(friend_id).removeValue();
+        friendNodeWithinUserFriendsDatabaseRef(friend_id).removeValue();
+        userNodeWithinFriendFriendsDatabaseRef(friend_id).removeValue();
     }
+
 
     public void sendFriendRequest(String friend_id) {
         /*
@@ -128,6 +146,7 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
                 }
             }
 
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
@@ -136,6 +155,7 @@ public class FirebaseDatabaseLoggedInReferences extends FirebaseDatabaseReferenc
 
 
     }
+
 
     public void deleteFriendRequest(String friend_id) {
         mFirebaseCurrentUserFriendRequestsDatabaseRef.child(friend_id).removeValue();

@@ -3,6 +3,16 @@
 ## See where friends are at in real-time!
 ### Currently being redeveloped into a full functional app by myself :raised_hands:
 
+#### Update December 23, 2016
+- ALPHA TESTING RELEASED ON PLAY STORE
+- friend request system fully functional
+- ability to delete friends
+- navigation menu shows your online friends
+- clicking on an online friend in the menu will take you to their location
+- map and navigation menu updates swiftly when friends are deleted
+- help popup added
+- UI finalized
+
 #### Update December 19, 2016
 - functional friend request system implemented. However, this feature is still in early stages and so all test/boundary cases are not yet covered
 - altered Firebase database schema for a separate section involving friend requests
