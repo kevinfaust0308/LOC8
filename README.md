@@ -1,7 +1,7 @@
 # LOC8 (pronounced *locate*) :earth_americas:
 
 ## See where friends are at in real-time!
-### Currently being redeveloped into a full functional app by myself :raised_hands:
+### Currently being redeveloped into a full functional app :raised_hands:
 Playstore download link: https://goo.gl/2jo97C
 
 #### Update December 23, 2016
